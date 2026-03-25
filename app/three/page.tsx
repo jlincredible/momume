@@ -97,25 +97,25 @@ const IMG_R2    = picsum('randB');
 const IMG_R3    = picsum('randC');
 
 const DEMO_SESSIONS: Session[] = [
-  { id:'s1', placeId:'xinyi_library',   lat:25.0375, lng:121.5625, friendId:'f_alex',   minutes:40,  startedAt:daysAgo(40), hangoutType:'Study', tags:['focus'],    moodScore:4, notes:'Quiet morning.',          moments:[{id:'m1',  kind:'photo',thumb:IMG_STUDY}] },
-  { id:'s2', placeId:'xinyi_library',   lat:25.0375, lng:121.5625, friendId:'f_jordan', minutes:55,  startedAt:daysAgo(35), hangoutType:'Chat',  tags:['career'],   moodScore:3, notes:'Talked a lot.',           moments:[{id:'m2',  kind:'photo',thumb:IMG_R1}]   },
-  { id:'s3', placeId:'xinyi_library',   lat:25.0375, lng:121.5625, friendId:'f_casey',  minutes:70,  startedAt:daysAgo(12), hangoutType:'Study', tags:['reading'],  moodScore:5, notes:'Best session.',           moments:[{id:'m4',  kind:'photo',thumb:IMG_STUDY}] },
-  { id:'s4', placeId:'xinyi_cafe',      lat:25.0350, lng:121.5680, friendId:'f_emily',  minutes:110, startedAt:daysAgo(30), hangoutType:'Vibe',  tags:['coffee'],   moodScore:4, notes:'Nice ambience.',          moments:[{id:'m5',  kind:'photo',thumb:IMG_CAFE}]  },
-  { id:'s5', placeId:'xinyi_cafe',      lat:25.0350, lng:121.5680, friendId:'f_alex',   minutes:30,  startedAt:daysAgo(0),  hangoutType:'Custom',tags:['check-in'], moodScore:3, notes:'Today meeting.',          moments:[{id:'mc1', kind:'photo',thumb:IMG_R2}]    },
-  { id:'e5', placeId:'xinyi_cafe',      lat:25.0350, lng:121.5680, friendId:'f_emily',  minutes:60,  startedAt:daysAgo(2),  hangoutType:'Vibe',  tags:['morning'],  moodScore:4, notes:'Quick catch up.',         moments:[{id:'me5', kind:'photo',thumb:IMG_CAFE}]  },
-  { id:'e3', placeId:'taipei_101',      lat:25.0339, lng:121.5645, friendId:'f_emily',  minutes:180, startedAt:daysAgo(10), hangoutType:'Vibe',  tags:['dinner'],   moodScore:5, notes:'Amazing view.',           moments:[{id:'m101',kind:'photo',thumb:IMG_VIBE}]  },
-  { id:'a1', placeId:'taipei_101',      lat:25.0339, lng:121.5645, friendId:'f_alex',   minutes:45,  startedAt:daysAgo(5),  hangoutType:'Custom',tags:['work'],     moodScore:3, notes:'Quick lunch meeting.',    moments:[{id:'ma1', kind:'photo',thumb:IMG_R3}]    },
-  { id:'e1', placeId:'ntu_campus',      lat:25.0173, lng:121.5373, friendId:'f_emily',  minutes:120, startedAt:daysAgo(14), hangoutType:'Study', tags:['campus'],   moodScore:4, notes:'Studied together.',       moments:[{id:'ntu1',kind:'photo',thumb:IMG_STUDY}] },
-  { id:'e2', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_emily',  minutes:90,  startedAt:daysAgo(12), hangoutType:'Hike',  tags:['walk'],     moodScore:5, notes:'Nice sunset walk.',       moments:[{id:'p1',  kind:'photo',thumb:IMG_PARK}]  },
-  { id:'e4', placeId:'zhongshan_cafe',  lat:25.0526, lng:121.5200, friendId:'f_emily',  minutes:150, startedAt:daysAgo(8),  hangoutType:'Chat',  tags:['coffee'],   moodScore:4, notes:'Deep talks.',             moments:[{id:'z1',  kind:'photo',thumb:IMG_CAFE}]  },
-  { id:'j1', placeId:'ntu_campus',      lat:25.0173, lng:121.5373, friendId:'f_jordan', minutes:200, startedAt:daysAgo(60), hangoutType:'Gym',   tags:['baseball'], moodScore:5, notes:'Team practice.',          moments:[{id:'g1',  kind:'photo',thumb:IMG_GYM}]   },
-  { id:'j2', placeId:'zhongshan_cafe',  lat:25.0526, lng:121.5200, friendId:'f_jordan', minutes:100, startedAt:daysAgo(4),  hangoutType:'Chat',  tags:['chill'],    moodScore:4, notes:'Corner cafe chill.',      moments:[{id:'z2',  kind:'photo',thumb:IMG_R1}]    },
-  { id:'j3', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_jordan', minutes:100, startedAt:daysAgo(1),  hangoutType:'Hike',  tags:['chill'],    moodScore:5, notes:'Night walk.',             moments:[{id:'p2',  kind:'photo',thumb:IMG_PARK}]  },
-  { id:'c1', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_casey',  minutes:60,  startedAt:daysAgo(0),  hangoutType:'Hike',  tags:['run'],      moodScore:4, notes:'Morning 5K run.',         moments:[{id:'p3',  kind:'photo',thumb:IMG_R2}]    },
+  { id:'s1', placeId:'Xinyi District Library',   lat:25.0375, lng:121.5625, friendId:'f_alex',   minutes:40,  startedAt:daysAgo(40), hangoutType:'Study', tags:['focus'],    moodScore:4, notes:'Quiet morning.',          moments:[{id:'m1',  kind:'photo',thumb:IMG_STUDY}] },
+  { id:'s2', placeId:'Xinyi District Library',   lat:25.0375, lng:121.5625, friendId:'f_jordan', minutes:55,  startedAt:daysAgo(35), hangoutType:'Chat',  tags:['career'],   moodScore:3, notes:'Talked a lot.',           moments:[{id:'m2',  kind:'photo',thumb:IMG_R1}]   },
+  { id:'s3', placeId:'Xinyi District Library',   lat:25.0375, lng:121.5625, friendId:'f_casey',  minutes:70,  startedAt:daysAgo(12), hangoutType:'Study', tags:['reading'],  moodScore:5, notes:'Best session.',           moments:[{id:'m4',  kind:'photo',thumb:IMG_STUDY}] },
+  { id:'s4', placeId:'Abstract Vibe Cafe',      lat:25.0350, lng:121.5680, friendId:'f_emily',  minutes:110, startedAt:daysAgo(30), hangoutType:'Vibe',  tags:['coffee'],   moodScore:4, notes:'Nice ambience.',          moments:[{id:'m5',  kind:'photo',thumb:IMG_CAFE}]  },
+  { id:'s5', placeId:'Abstract Vibe Cafe',      lat:25.0350, lng:121.5680, friendId:'f_alex',   minutes:30,  startedAt:daysAgo(0),  hangoutType:'Custom',tags:['check-in'], moodScore:3, notes:'Today meeting.',          moments:[{id:'mc1', kind:'photo',thumb:IMG_R2}]    },
+  { id:'e5', placeId:'Abstract Vibe Cafe',      lat:25.0350, lng:121.5680, friendId:'f_emily',  minutes:60,  startedAt:daysAgo(2),  hangoutType:'Vibe',  tags:['morning'],  moodScore:4, notes:'Quick catch up.',         moments:[{id:'me5', kind:'photo',thumb:IMG_CAFE}]  },
+  { id:'e3', placeId:'Taipei 101 Tower',        lat:25.0339, lng:121.5645, friendId:'f_emily',  minutes:180, startedAt:daysAgo(10), hangoutType:'Vibe',  tags:['dinner'],   moodScore:5, notes:'Amazing view.',           moments:[{id:'m101',kind:'photo',thumb:IMG_VIBE}]  },
+  { id:'a1', placeId:'Taipei 101 Tower',        lat:25.0339, lng:121.5645, friendId:'f_alex',   minutes:45,  startedAt:daysAgo(5),  hangoutType:'Custom',tags:['work'],     moodScore:3, notes:'Quick lunch meeting.',    moments:[{id:'ma1', kind:'photo',thumb:IMG_R3}]    },
+  { id:'e1', placeId:'NTU Campus Area',         lat:25.0173, lng:121.5373, friendId:'f_emily',  minutes:120, startedAt:daysAgo(14), hangoutType:'Study', tags:['campus'],   moodScore:4, notes:'Studied together.',       moments:[{id:'ntu1',kind:'photo',thumb:IMG_STUDY}] },
+  { id:'e2', placeId:'Daan Forest Park',        lat:25.0300, lng:121.5350, friendId:'f_emily',  minutes:90,  startedAt:daysAgo(12), hangoutType:'Hike',  tags:['walk'],     moodScore:5, notes:'Nice sunset walk.',       moments:[{id:'p1',  kind:'photo',thumb:IMG_PARK}]  },
+  { id:'e4', placeId:'Zhongshan Linear Park',  lat:25.0526, lng:121.5200, friendId:'f_emily',  minutes:150, startedAt:daysAgo(8),  hangoutType:'Chat',  tags:['coffee'],   moodScore:4, notes:'Deep talks.',             moments:[{id:'z1',  kind:'photo',thumb:IMG_CAFE}]  },
+  { id:'j1', placeId:'NTU Campus Area',         lat:25.0173, lng:121.5373, friendId:'f_jordan', minutes:200, startedAt:daysAgo(60), hangoutType:'Gym',   tags:['baseball'], moodScore:5, notes:'Team practice.',          moments:[{id:'g1',  kind:'photo',thumb:IMG_GYM}]   },
+  { id:'j2', placeId:'Zhongshan Linear Park',  lat:25.0526, lng:121.5200, friendId:'f_jordan', minutes:100, startedAt:daysAgo(4),  hangoutType:'Chat',  tags:['chill'],    moodScore:4, notes:'Corner cafe chill.',      moments:[{id:'z2',  kind:'photo',thumb:IMG_R1}]    },
+  { id:'j3', placeId:'Daan Forest Park',        lat:25.0300, lng:121.5350, friendId:'f_jordan', minutes:100, startedAt:daysAgo(1),  hangoutType:'Hike',  tags:['chill'],    moodScore:5, notes:'Night walk.',             moments:[{id:'p2',  kind:'photo',thumb:IMG_PARK}]  },
+  { id:'c1', placeId:'Daan Forest Park',        lat:25.0300, lng:121.5350, friendId:'f_casey',  minutes:60,  startedAt:daysAgo(0),  hangoutType:'Hike',  tags:['run'],      moodScore:4, notes:'Morning 5K run.',         moments:[{id:'p3',  kind:'photo',thumb:IMG_R2}]    },
 ];
 
 function generateDenseSessions(): Session[] {
-  const placeId = 'taipei_memory_hub', lat = 25.022, lng = 121.538;
+  const placeId = 'Taipei Memory Hub', lat = 25.022, lng = 121.538;
   const friendIds = Object.keys(FRIEND_COLORS);
   const types: HangoutType[] = ['Chat','Study','Vibe','Custom','Gym'];
   return Array.from({length:25},(_,i)=>{
@@ -267,17 +267,17 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
       {funnelData.map((fd,i)=>(
         <mesh key={i} ref={r=>{if(r)ringRefs.current[i]=r;}} position={[0,fd.y,0]} rotation={[-Math.PI/2,0,0]}>
           <torusGeometry args={[fd.radius,0.018,12,80]}/>
-          <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} depthWrite={false}/>
+          <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} />
         </mesh>
       ))}
-      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} /></mesh>
       {beamAngles.map((ang,i)=>{
         const br=0.5+((i%3)*0.12);
-        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>);
+        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} /></mesh>);
       })}
-      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>))}
-      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} /></mesh>))}
+      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} /></mesh>
       <Html center transform={false} occlude={false} distanceFactor={10} position={[1.2,0.9,0]}>
         <div style={{ pointerEvents:'none', color:'white', fontFamily:'Inter,system-ui,sans-serif', width:128, padding:'10px 13px', borderRadius:12, background:'rgba(8,14,24,0.75)', border:`1px solid ${color}44`, backdropFilter:'blur(8px)', boxShadow:`0 0 20px ${color}22` }}>
           <div style={{fontSize:9,letterSpacing:'0.15em',opacity:0.55,marginBottom:3}}>PLACE ENERGY</div>
@@ -299,8 +299,8 @@ function MemoryMetaChip({color,title,subtitle,active}:{color:string;title:string
   useFrame(({clock})=>{ if(!ref.current)return; ref.current.position.y=THREE.MathUtils.lerp(ref.current.position.y,active?0.38+Math.sin(clock.elapsedTime*1.5)*0.01:0.22,0.12); });
   return (
     <group ref={ref} position={[1.45,0.22,0.08]}>
-      <mesh><planeGeometry args={[1.0,0.45]}/><meshBasicMaterial color="#0d1626" transparent opacity={active?0.85:0} depthWrite={false}/></mesh>
-      <mesh position={[0,0,0.002]}><planeGeometry args={[1.04,0.49]}/><meshBasicMaterial color={color} transparent opacity={active?0.3:0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh><planeGeometry args={[1.0,0.45]}/><meshBasicMaterial color="#0d1626" transparent opacity={active?0.85:0} /></mesh>
+      <mesh position={[0,0,0.002]}><planeGeometry args={[1.04,0.49]}/><meshBasicMaterial color={color} transparent opacity={active?0.3:0} blending={THREE.AdditiveBlending} /></mesh>
       {active&&<Html center transform={false} occlude={false} style={{pointerEvents:'none',width:'140px',transform:'translate(-50%,-50%)',color:'white',fontFamily:'system-ui,sans-serif',textShadow:'0 0 10px rgba(0,0,0,0.8)'}}>
         <div style={{fontSize:13,fontWeight:700,lineHeight:1.15}}>{title}</div>
         <div style={{fontSize:11,opacity:0.72,marginTop:4}}>{subtitle}</div>
@@ -308,6 +308,19 @@ function MemoryMetaChip({color,title,subtitle,active}:{color:string;title:string
     </group>
   );
 }
+
+/* =========================
+   Mobile Sum Card Icons
+========================= */
+
+const IconMap: Record<HangoutType, React.ReactNode> = {
+  Chat: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  Study: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+  Gym: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 8h-1V6M6 8H5V6M2 11h20M12 2v20M9 11v9m6-9v9"/></svg>,
+  Hike: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>,
+  Vibe: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 14.5c.5.5 1.5 1 4 1s3.5-.5 4-1M9 9h.01M15 9h.01"/></svg>,
+  Custom: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>,
+};
 
 /* =========================
    MemoryCard
@@ -391,8 +404,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
       tx = 0;
       tz = R * 1.18;
       ty = 0.36 + frontLift * 0.4;
-      // ⚠️ 修正：手機版將卡片比例降為 1.6，電腦版保持 2.35
-      sc = isMobile ? 1.6 : 2.35;
+      sc = isMobile ? 0.85 : 2.35; 
     } else if (shouldRetreat) {
       const retreat = 0.55 + Math.min(abs, 1) * 0.6;
       tx *= 0.18;
@@ -443,8 +455,8 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
     }
   });
 
-  // ⚠️ 修正：因為照片縮小了，手機版的卡片往上提一點，才不會跟照片離太遠
-  const htmlPos = isMobile ? [0, -1.4, 0] : [-1.6, 0, 0];
+  const htmlPos = isMobile ? [0, -1.7, 0] : [-1.6, 0, 0];
+  const htmlDistanceFactor = isMobile ? 8 : 10;
 
   return (
     <group ref={groupRef}
@@ -474,9 +486,9 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
       onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);longPressTriggeredRef.current=false;setHovered(false);document.body.style.cursor='';}}
       onPointerOver={()=>{setHovered(true);document.body.style.cursor='pointer';}}
     >
-      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} wireframe/></mesh>
+      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} wireframe/></mesh>
       {tex?(
         <mesh><planeGeometry args={[1.35,1.35]}/>
           {/* @ts-ignore */}
@@ -489,32 +501,114 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         <MemoryMetaChip color={m.color} title={m.hangoutType??'Memory'} subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`} active={isActive} />
       )}
 
-      {/* ⚠️ 修正：加入 maxWidth 限制防呆，確保手機上絕不會爆框 */}
       {isActive && (
-        <Html center transform={false} occlude={false} distanceFactor={10} position={htmlPos as [number,number,number]}>
-          <div
-            style={{
-              pointerEvents: 'auto',
-              width: isMobile ? 300 : 320, // 手機版稍微收窄一點
-              maxWidth: '85vw',            // 防呆機制，保證不超出螢幕
-              background: 'rgba(22, 28, 40, 0.85)',
-              borderRadius: 16,
-              border: `1px solid ${m.color}66`,
-              backdropFilter: 'blur(20px)',
-              boxShadow: `0 18px 50px ${m.color}33, 0 12px 32px rgba(0,0,0,0.6)`,
-              opacity: panelOpen ? 1 : 0,
-              transform: panelOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -40%) scale(0.95)',
-              transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease',
-            }}
-          >
-            <SessionCard 
-              placeId={m.placeId} 
-              session={m} 
-              onBack={onCancelActive} 
-              onOpenFull={() => router.push(`/session/${m.sessionId}`)} 
-              onClose={onCancelActive} 
-            />
-          </div>
+        <Html center transform={false} occlude={false} distanceFactor={htmlDistanceFactor} position={htmlPos as [number,number,number]}>
+          {isMobile ? (
+            <div
+              style={{
+                pointerEvents: 'auto',
+                width: 260, 
+                maxWidth: '85vw',
+                background: 'rgba(10, 14, 24, 0.9)', 
+                borderRadius: 20, 
+                border: `1px solid ${m.color}33`, 
+                backdropFilter: 'blur(22px)',
+                boxShadow: `0 25px 50px rgba(0,0,0,0.8), 0 0 15px ${m.color}10`,
+                opacity: panelOpen ? 1 : 0,
+                transform: panelOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -40%) scale(0.95)',
+                transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease',
+                color: 'white',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                overflow: 'hidden',
+                letterSpacing: '-0.01em'
+              }}
+            >
+              <div style={{ padding: '16px 16px 12px', position: 'relative' }}> 
+                <div style={{ position: 'absolute', top: -30, left: -30, width: 80, height: 80, background: `${m.color}15`, filter: 'blur(25px)', borderRadius: '50%' }} />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ 
+                    display: 'flex', alignItems: 'center', gap: 8, 
+                    fontSize: 16, fontWeight: 800, color: 'white', 
+                  }}>
+                    <div style={{ color: m.color, display: 'flex', transform: 'scale(0.9)' }}>{IconMap[m.hangoutType as HangoutType] ?? IconMap.Custom}</div>
+                    {m.hangoutType ?? 'Memory'}
+                  </div>
+                  <div style={{ 
+                    fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.5)', 
+                    background: 'rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: 99
+                  }}>
+                    {m.startedAt ? fmtTime(m.startedAt).split(' ')[0] : ''}
+                  </div>
+                </div>
+                
+                <div style={{ 
+                  fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.8)', 
+                  display: 'flex', alignItems: 'center', gap: 6, 
+                  background: 'rgba(255,255,255,0.04)', padding: '8px 12px', borderRadius: 10, 
+                  border: '1px solid rgba(255,255,255,0.03)'
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{color: 'rgba(255,255,255,0.4)'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{m.placeId}</div>
+                </div>
+              </div>
+
+              <div style={{ 
+                background: 'rgba(0,0,0,0.2)', 
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                padding: '12px 16px', 
+                display: 'grid', gridTemplateColumns: '1fr 1px 1fr', alignItems: 'center', gap: 12 
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Focused</div>
+                  <div style={{ 
+                    fontSize: 22, fontWeight: 800, color: m.color, 
+                    display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2,
+                    textShadow: `0 0 10px ${m.color}40` 
+                  }}>
+                    {Math.round(m.minutes ?? 0)}
+                    <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>m</span>
+                  </div>
+                </div>
+
+                <div style={{ width: 1, height: 25, background: 'rgba(255,255,255,0.08)' }} /> 
+
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Oops</div>
+                  <div style={{ 
+                    fontSize: 22, fontWeight: 800, color: 'white', opacity: 0.9, 
+                    display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2
+                  }}>
+                    {m.oops ?? 0}
+                    <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.6 }}>times</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                pointerEvents: 'auto',
+                width: 320,
+                background: 'rgba(22, 28, 40, 0.85)',
+                borderRadius: 16,
+                border: `1px solid ${m.color}66`,
+                backdropFilter: 'blur(20px)',
+                boxShadow: `0 18px 50px ${m.color}33, 0 12px 32px rgba(0,0,0,0.6)`,
+                opacity: panelOpen ? 1 : 0,
+                transform: panelOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -40%) scale(0.95)',
+                transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease',
+              }}
+            >
+              <SessionCard 
+                placeId={m.placeId} 
+                session={m} 
+                onBack={onCancelActive} 
+                onOpenFull={() => router.push(`/session/${m.sessionId}`)} 
+                onClose={onCancelActive} 
+              />
+            </div>
+          )}
         </Html>
       )}
     </group>
@@ -617,8 +711,8 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
 
   return (
     <group ref={groupRef} position={[0, galleryY, 0]}>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} /></mesh>
       {moments.map((m,i)=>(
         <MemoryCard key={m.id} m={m} index={i} total={moments.length} ringRadius={ringRadius}
           scrollRef={scrollRef} dragRef={dragRef} isMobile={isMobile}
@@ -728,8 +822,8 @@ function PulseRing({isActive,isHover,muted,onPick}:{isActive:boolean;isHover:boo
   if(muted)return null;
   return (
     <group position={[0,0.01,0]} rotation={[-Math.PI/2,0,0]} onPointerDown={e=>{e.stopPropagation();onPick();}}>
-      <mesh><ringGeometry args={[0.45,0.6,44]}/><meshBasicMaterial color="#fff" transparent opacity={isActive?0.4:isHover?0.28:0.18} depthWrite={false}/></mesh>
-      {isActive&&<mesh ref={meshRef} position={[0,0,0.001]}><ringGeometry args={[0.6,0.75,44]}/><meshBasicMaterial ref={matRef} color="#2DD4BF" transparent opacity={0.3} depthWrite={false}/></mesh>}
+      <mesh><ringGeometry args={[0.45,0.6,44]}/><meshBasicMaterial color="#fff" transparent opacity={isActive?0.4:isHover?0.28:0.18}/></mesh>
+      {isActive&&<mesh ref={meshRef} position={[0,0,0.001]}><ringGeometry args={[0.6,0.75,44]}/><meshBasicMaterial ref={matRef} color="#2DD4BF" transparent opacity={0.3}/></mesh>}
     </group>
   );
 }
@@ -1177,13 +1271,13 @@ export default function ThreePage() {
     map.flyTo({center:[place.lng,place.lat],offset:(isExpand?(isMobile?[0,150]:[0,120]):(isMobile?[0,150]:[0,60])) as [number,number],zoom:isExpand?16.2:Math.max(curZ,15.5),pitch:isExpand?60:50,duration:1200,essential:true});
   },[isMobile]);
 
-  // ⚠️ 全新攝影機視角：拉遠 Zoom，並大幅向下偏移
+  // 將 Zoom 放遠至 11.0，確保畫面寬廣不切邊
   const focusPhoto=useCallback((place:PlaceAggregate)=>{
     const map=mapRef.current;if(!map)return;
     map.flyTo({
       center:[place.lng,place.lat],
-      offset:[0, isMobile ? 180 : 180] as [number,number], // 降低 Y 軸偏移，讓照片不會頂到最上面
-      zoom: isMobile ? 13.2 : 13.8,  // 手機版稍微退後一點，避免照片過大
+      offset: isMobile ? [0, 20] : [0, 180] as [number,number], 
+      zoom: isMobile ? 11.0 : 13.8,  
       pitch: 65, 
       duration: 1000,
       essential: true
@@ -1216,6 +1310,7 @@ export default function ThreePage() {
   const dispBlock   = dispPlace&&sheet.sessionId?dispPlace.blocks.find(b=>b.sessionId===sheet.sessionId)??null:null;
   const dispSummary = dispPlace?getPlaceSummary(dispPlace):null;
   
+  // 當照片在放大時，把底部大塊 Modal 收起
   const sheetOpen   = sheet.isOpen && !activePhotoId;
 
   useEffect(()=>{
