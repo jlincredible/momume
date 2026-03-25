@@ -441,7 +441,6 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
     }
   });
 
-  // 手機版放下面，電腦版放左邊
   const htmlPos = isMobile ? [0, -1.5, 0] : [-1.6, 0.2, 0];
 
   return (
@@ -454,7 +453,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
           longPressTriggeredRef.current=true;
           onSnapToCenter(index);
           onMakeActive();
-          onSelectSession(m.sessionId, true); // 標記來自照片點擊
+          onSelectSession(m.sessionId, true); 
         },320);
       }}
       onPointerUp={e=>{
@@ -466,7 +465,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         const h=total/2;if(off>h)off-=total;if(off<-h)off+=total;
         if(Math.abs(off)<0.4) {
           onMakeActive();
-          onSelectSession(m.sessionId, true); // 標記來自照片點擊
+          onSelectSession(m.sessionId, true); 
         } else onSnapToCenter(index);
       }}
       onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);longPressTriggeredRef.current=false;setHovered(false);document.body.style.cursor='';}}
@@ -491,7 +490,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         <Html center transform={false} occlude={false} distanceFactor={10} position={htmlPos as [number,number,number]}>
           <div
             style={{
-              pointerEvents: 'auto', // 允許在面板上互動
+              pointerEvents: 'auto', 
               width: 260,
               padding: '16px 20px',
               borderRadius: 20,
@@ -733,7 +732,7 @@ function PulseRing({isActive,isHover,muted,onPick}:{isActive:boolean;isHover:boo
 }
 
 /* =========================
-   Trajectory & Environment (省略未更動細節以保持整潔)
+   Trajectory
 ========================= */
 
 function SingleTrajectoryLine({sequence,places,mapRef,mapReady,timeFilter,friendFilter}:{ sequence:{lng:number;lat:number;placeId:string;friendId:string}[]; places:PlaceAggregate[];mapRef:React.MutableRefObject<mapboxgl.Map|null>;mapReady:boolean; timeFilter:TimeFilter;friendFilter:string; }) {
@@ -773,6 +772,10 @@ function TrajectoryManager({places,sessions,timeFilter,friendFilter,selectedPlac
   return <group><SingleTrajectoryLine key={`${timeFilter}-${friendFilter}`} sequence={seq} places={places} mapRef={mapRef} mapReady={mapReady} timeFilter={timeFilter} friendFilter={friendFilter}/></group>;
 }
 
+/* =========================
+   Holographic Environment & Life Systems
+========================= */
+
 function HolographicEnvironment() {
   const groupRef = useRef<THREE.Group>(null);
   const cloudGeo = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
@@ -792,49 +795,220 @@ function HolographicEnvironment() {
   );
 }
 
+// 2. 光軌交通系統 (車輛在 Places 之間穿梭 - 修正轉向並放大5倍)
 function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggregate[], mapRef: React.MutableRefObject<mapboxgl.Map|null>, mapReady: boolean }) {
-  const carCount = Math.min(places.length * 2, 30); const meshRef = useRef<THREE.InstancedMesh>(null); const stateRef = useRef<Float32Array>(new Float32Array(0)); const dummy = useMemo(() => new THREE.Object3D(), []); const vec = useMemo(() => new THREE.Vector3(), []); const { camera, size } = useThree();
+  const carCount = Math.min(places.length * 2, 30);
+  const headMeshRef = useRef<THREE.InstancedMesh>(null);
+  const bodyMeshRef = useRef<THREE.InstancedMesh>(null);
+  const stateRef = useRef<Float32Array>(new Float32Array(0));
+  
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const vec = useMemo(() => new THREE.Vector3(), []);
+  const curPos = useMemo(() => new THREE.Vector3(), []);
+  const nextPos = useMemo(() => new THREE.Vector3(), []);
+  const targetPos = useMemo(() => new THREE.Vector3(), []); // 優化: 避免使用 clone
+  const { camera, size } = useThree();
+
   useEffect(() => {
-    if (places.length < 2) return; stateRef.current = new Float32Array(carCount * 7); 
-    for (let i = 0; i < carCount; i++) { const p1 = places[Math.floor(Math.random() * places.length)]; const p2 = places[Math.floor(Math.random() * places.length)]; const idx = i * 7; stateRef.current[idx] = p1.lng; stateRef.current[idx+1] = p1.lat; stateRef.current[idx+2] = p2.lng; stateRef.current[idx+3] = p2.lat; stateRef.current[idx+4] = Math.random(); stateRef.current[idx+5] = 0.001 + Math.random() * 0.002; }
-  }, [places, carCount]);
-  useFrame(() => {
-    if (!mapReady || !mapRef.current || size.width === 0 || !meshRef.current || stateRef.current.length === 0) return;
-    const map = mapRef.current; const zs = Math.pow(2, map.getZoom() - BASE_ZOOM);
+    if (places.length < 2) return;
+    stateRef.current = new Float32Array(carCount * 7); 
+    
     for (let i = 0; i < carCount; i++) {
-      const idx = i * 7; let progress = stateRef.current[idx+4] + stateRef.current[idx+5];
-      if (progress >= 1) { progress = 0; stateRef.current[idx] = stateRef.current[idx+2]; stateRef.current[idx+1] = stateRef.current[idx+3]; const nextP = places[Math.floor(Math.random() * places.length)]; stateRef.current[idx+2] = nextP.lng; stateRef.current[idx+3] = nextP.lat; }
-      stateRef.current[idx+4] = progress;
-      const cLng = THREE.MathUtils.lerp(stateRef.current[idx], stateRef.current[idx+2], progress); const cLat = THREE.MathUtils.lerp(stateRef.current[idx+1], stateRef.current[idx+3], progress);
-      const pt = map.project([cLng, cLat]); vec.set((pt.x / size.width) * 2 - 1, -(pt.y / size.height) * 2 + 1, 0.5); vec.unproject(camera); vec.sub(camera.position).normalize(); const d = -camera.position.y / vec.y;
-      dummy.position.copy(camera.position).add(vec.multiplyScalar(d)); dummy.position.y += 0.05 * zs; 
-      const dx = stateRef.current[idx+2] - stateRef.current[idx]; const dy = stateRef.current[idx+3] - stateRef.current[idx+1]; dummy.rotation.set(0, -Math.atan2(dy, dx), 0); dummy.scale.set(0.15 * zs, 0.04 * zs, 0.06 * zs); dummy.updateMatrix(); meshRef.current.setMatrixAt(i, dummy.matrix);
+      const p1 = places[Math.floor(Math.random() * places.length)];
+      const p2 = places[Math.floor(Math.random() * places.length)];
+      const idx = i * 7;
+      stateRef.current[idx] = p1.lng; stateRef.current[idx+1] = p1.lat;
+      stateRef.current[idx+2] = p2.lng; stateRef.current[idx+3] = p2.lat;
+      stateRef.current[idx+4] = Math.random(); 
+      // ⚠️ 速度降為 0.25 倍 (0.001~0.003 -> 0.00025~0.0005)
+      stateRef.current[idx+5] = 0.00025 + Math.random() * 0.0005; 
     }
-    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [places, carCount]);
+
+  const headGeo = useMemo(() => {
+    const g = new THREE.SphereGeometry(0.18, 8, 8);
+    g.translate(0, 0.85, 0); 
+    return g;
+  }, []);
+  const bodyGeo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.12, 0.18, 0.6, 6);
+    g.translate(0, 0.3, 0); 
+    return g;
+  }, []);
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }), []);
+
+  useFrame((state) => {
+    if (!mapReady || !mapRef.current || size.width === 0 || !headMeshRef.current || !bodyMeshRef.current || stateRef.current.length === 0) return;
+    const map = mapRef.current;
+    const zs = Math.pow(2, map.getZoom() - BASE_ZOOM);
+    const t = state.clock.elapsedTime;
+
+    for (let i = 0; i < carCount; i++) {
+      const idx = i * 7;
+      let progress = stateRef.current[idx+4] + stateRef.current[idx+5];
+      
+      if (progress >= 1) {
+        progress = 0;
+        stateRef.current[idx] = stateRef.current[idx+2];
+        stateRef.current[idx+1] = stateRef.current[idx+3];
+        const nextP = places[Math.floor(Math.random() * places.length)];
+        stateRef.current[idx+2] = nextP.lng;
+        stateRef.current[idx+3] = nextP.lat;
+      }
+      stateRef.current[idx+4] = progress;
+
+      const cLng = THREE.MathUtils.lerp(stateRef.current[idx], stateRef.current[idx+2], progress);
+      const cLat = THREE.MathUtils.lerp(stateRef.current[idx+1], stateRef.current[idx+3], progress);
+      const nextProgress = progress + 0.001; 
+      const nLng = THREE.MathUtils.lerp(stateRef.current[idx], stateRef.current[idx+2], Math.min(nextProgress, 1));
+      const nLat = THREE.MathUtils.lerp(stateRef.current[idx+1], stateRef.current[idx+3], Math.min(nextProgress, 1));
+
+      const pt = map.project([cLng, cLat]);
+      vec.set((pt.x / size.width) * 2 - 1, -(pt.y / size.height) * 2 + 1, 0.5);
+      vec.unproject(camera).sub(camera.position).normalize();
+      curPos.copy(camera.position).add(vec.multiplyScalar(-camera.position.y / vec.y));
+
+      const ptNext = map.project([nLng, nLat]);
+      vec.set((ptNext.x / size.width) * 2 - 1, -(ptNext.y / size.height) * 2 + 1, 0.5);
+      vec.unproject(camera).sub(camera.position).normalize();
+      nextPos.copy(camera.position).add(vec.multiplyScalar(-camera.position.y / vec.y));
+
+      dummy.position.copy(curPos);
+      
+      // ⚠️ 修正: 強制面向水平目標，確保絕對直立
+      targetPos.copy(dummy.position);
+      targetPos.x += nextPos.x - curPos.x;
+      targetPos.z += nextPos.z - curPos.z;
+      if (curPos.distanceToSquared(nextPos) > 1e-10) {
+        dummy.lookAt(targetPos);
+      }
+
+      // 稍微提高並加上走路彈跳
+      const bounce = Math.abs(Math.sin(t * 15 + i)); 
+      dummy.position.y += 0.05 * zs + bounce * 0.05 * zs; 
+
+      // ⚠️ 修正: 放大 5 倍 (0.08 -> 0.4)
+      dummy.scale.set(0.4 * zs, 0.4 * zs, 0.4 * zs);
+      
+      dummy.updateMatrix();
+      headMeshRef.current.setMatrixAt(i, dummy.matrix);
+      bodyMeshRef.current.setMatrixAt(i, dummy.matrix);
+    }
+    headMeshRef.current.instanceMatrix.needsUpdate = true;
+    bodyMeshRef.current.instanceMatrix.needsUpdate = true;
   });
-  const carGeo = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []); const carMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }), []);
-  if (places.length < 2) return null; return <instancedMesh ref={meshRef} args={[carGeo, carMat, carCount]} depthWrite={false} />;
+
+  if (places.length < 2) return null;
+  return (
+    <group>
+      <instancedMesh ref={headMeshRef} args={[headGeo, mat, carCount]} depthWrite={false} />
+      <instancedMesh ref={bodyMeshRef} args={[bodyGeo, mat, carCount]} depthWrite={false} />
+    </group>
+  );
 }
 
+// 3. 全息行人系統 (在 Places 附近徘徊 - 同步修正並放大)
 function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate[], mapRef: React.MutableRefObject<mapboxgl.Map|null>, mapReady: boolean }) {
-  const agentCount = Math.min(places.length * 5, 100); const meshRef = useRef<THREE.InstancedMesh>(null); const stateRef = useRef<Float32Array>(new Float32Array(0)); const dummy = useMemo(() => new THREE.Object3D(), []); const vec = useMemo(() => new THREE.Vector3(), []); const { camera, size } = useThree();
+  const agentCount = Math.min(places.length * 5, 100);
+  const headMeshRef = useRef<THREE.InstancedMesh>(null);
+  const bodyMeshRef = useRef<THREE.InstancedMesh>(null);
+  const stateRef = useRef<Float32Array>(new Float32Array(0));
+  
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const vec = useMemo(() => new THREE.Vector3(), []);
+  const curPos = useMemo(() => new THREE.Vector3(), []);
+  const nextPos = useMemo(() => new THREE.Vector3(), []);
+  const targetPos = useMemo(() => new THREE.Vector3(), []); // 優化
+  const { camera, size } = useThree();
+
   useEffect(() => {
-    if (places.length === 0) return; stateRef.current = new Float32Array(agentCount * 5); 
-    for (let i = 0; i < agentCount; i++) { const p = places[Math.floor(Math.random() * places.length)]; const idx = i * 5; stateRef.current[idx] = p.lng; stateRef.current[idx+1] = p.lat; stateRef.current[idx+2] = (Math.random() - 0.5) * 0.002; stateRef.current[idx+3] = (Math.random() - 0.5) * 0.002; stateRef.current[idx+4] = 0.15 + Math.random() * 0.3; }
-  }, [places, agentCount]);
-  useFrame((state) => {
-    if (!mapReady || !mapRef.current || size.width === 0 || !meshRef.current || stateRef.current.length === 0) return;
-    const map = mapRef.current; const zs = Math.pow(2, map.getZoom() - BASE_ZOOM); const t = state.clock.elapsedTime;
+    if (places.length === 0) return;
+    stateRef.current = new Float32Array(agentCount * 5); 
     for (let i = 0; i < agentCount; i++) {
-      const idx = i * 5; const baseLng = stateRef.current[idx]; const baseLat = stateRef.current[idx+1]; const speed = stateRef.current[idx+4]; 
-      const curLng = baseLng + stateRef.current[idx+2] * Math.sin(t * speed); const curLat = baseLat + stateRef.current[idx+3] * Math.cos(t * speed);
-      const pt = map.project([curLng, curLat]); vec.set((pt.x / size.width) * 2 - 1, -(pt.y / size.height) * 2 + 1, 0.5); vec.unproject(camera); vec.sub(camera.position).normalize(); const d = -camera.position.y / vec.y;
-      dummy.position.copy(camera.position).add(vec.multiplyScalar(d)); dummy.position.y += Math.abs(Math.sin(t * speed * 2)) * 0.02 * zs; dummy.scale.set(0.04 * zs, 0.1 * zs, 0.04 * zs); dummy.updateMatrix(); meshRef.current.setMatrixAt(i, dummy.matrix);
+      const p = places[Math.floor(Math.random() * places.length)];
+      const idx = i * 5;
+      stateRef.current[idx] = p.lng;
+      stateRef.current[idx+1] = p.lat;
+      stateRef.current[idx+2] = (Math.random() - 0.5) * 0.002; 
+      stateRef.current[idx+3] = (Math.random() - 0.5) * 0.002;
+      // ⚠️ 速度降為 0.25 倍
+      stateRef.current[idx+4] = 0.04 + Math.random() * 0.08;
     }
-    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [places, agentCount]);
+
+  const headGeo = useMemo(() => {
+    const g = new THREE.SphereGeometry(0.18, 8, 8);
+    g.translate(0, 0.85, 0); 
+    return g;
+  }, []);
+  const bodyGeo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.12, 0.18, 0.6, 6);
+    g.translate(0, 0.3, 0); 
+    return g;
+  }, []);
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending }), []);
+
+  useFrame((state) => {
+    if (!mapReady || !mapRef.current || size.width === 0 || !headMeshRef.current || !bodyMeshRef.current || stateRef.current.length === 0) return;
+    const map = mapRef.current;
+    const zs = Math.pow(2, map.getZoom() - BASE_ZOOM);
+    const t = state.clock.elapsedTime;
+
+    for (let i = 0; i < agentCount; i++) {
+      const idx = i * 5;
+      const baseLng = stateRef.current[idx];
+      const baseLat = stateRef.current[idx+1];
+      const speed = stateRef.current[idx+4]; 
+      
+      const curLng = baseLng + stateRef.current[idx+2] * Math.sin(t * speed);
+      const curLat = baseLat + stateRef.current[idx+3] * Math.cos(t * speed);
+      
+      const nextLng = baseLng + stateRef.current[idx+2] * Math.sin((t + 0.05) * speed);
+      const nextLat = baseLat + stateRef.current[idx+3] * Math.cos((t + 0.05) * speed);
+
+      const pt = map.project([curLng, curLat]);
+      vec.set((pt.x / size.width) * 2 - 1, -(pt.y / size.height) * 2 + 1, 0.5);
+      vec.unproject(camera).sub(camera.position).normalize();
+      curPos.copy(camera.position).add(vec.multiplyScalar(-camera.position.y / vec.y));
+
+      const ptNext = map.project([nextLng, nextLat]);
+      vec.set((ptNext.x / size.width) * 2 - 1, -(ptNext.y / size.height) * 2 + 1, 0.5);
+      vec.unproject(camera).sub(camera.position).normalize();
+      nextPos.copy(camera.position).add(vec.multiplyScalar(-camera.position.y / vec.y));
+
+      dummy.position.copy(curPos);
+      
+      // ⚠️ 修正: 強制面向水平目標
+      targetPos.copy(dummy.position);
+      targetPos.x += nextPos.x - curPos.x;
+      targetPos.z += nextPos.z - curPos.z;
+      if (curPos.distanceToSquared(nextPos) > 1e-10) {
+        dummy.lookAt(targetPos);
+      }
+
+      const bounce = Math.abs(Math.sin(t * speed * 2)); 
+      dummy.position.y += bounce * 0.05 * zs; 
+      
+      dummy.rotateX(Math.sin(t * speed * 1) * 0.1); 
+
+      // ⚠️ 修正: 放大 5 倍
+      dummy.scale.set(0.4 * zs, 0.4 * zs, 0.4 * zs);
+      
+      dummy.updateMatrix();
+      headMeshRef.current.setMatrixAt(i, dummy.matrix);
+      bodyMeshRef.current.setMatrixAt(i, dummy.matrix);
+    }
+    headMeshRef.current.instanceMatrix.needsUpdate = true;
+    bodyMeshRef.current.instanceMatrix.needsUpdate = true;
   });
-  const geo = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []); const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending }), []);
-  if (places.length === 0) return null; return <instancedMesh ref={meshRef} args={[geo, mat, agentCount]} depthWrite={false} />;
+
+  if (places.length === 0) return null;
+  return (
+    <group>
+      <instancedMesh ref={headMeshRef} args={[headGeo, mat, agentCount]} depthWrite={false} />
+      <instancedMesh ref={bodyMeshRef} args={[bodyGeo, mat, agentCount]} depthWrite={false} />
+    </group>
+  );
 }
 
 /* =========================
@@ -842,7 +1016,8 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
 ========================= */
 
 function getPlaceSummary(place:PlaceAggregate) {
-  const totalMinutes=place.blocks.reduce((s,b)=>s+b.minutes,0); const totalOops=place.blocks.reduce((s,b)=>s+b.oops,0);
+  const totalMinutes=place.blocks.reduce((s,b)=>s+b.minutes,0);
+  const totalOops=place.blocks.reduce((s,b)=>s+b.oops,0);
   const byF=new Map<string,{minutes:number;oops:number}>();
   for(const b of place.blocks){const c=byF.get(b.friendId)??{minutes:0,oops:0};c.minutes+=b.minutes;c.oops+=b.oops;byF.set(b.friendId,c);}
   const topFriends=Array.from(byF.entries()).map(([friendId,v])=>({friendId,name:FRIEND_NAMES[friendId]??friendId,minutes:v.minutes,oops:v.oops,color:FRIEND_COLORS[friendId]??'#888'})).sort((a,b)=>b.minutes-a.minutes);
@@ -926,7 +1101,6 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
               )}
             </group>
 
-            {/* 隱藏底部卡片如果照片正在展開 */}
             {!isMobile&&isSel&&summary&&!activePhotoId&&(
               <group position={[0,anchorY,0]}>
                 <Html center transform={false} occlude={false} distanceFactor={14}
@@ -971,7 +1145,7 @@ export default function ThreePage() {
   const [timeFilter,setTimeFilter]               = useState<TimeFilter>('month');
   const [friendFilter,setFriendFilter]           = useState<string|'all'>('all');
   const [isFilterOpen,setIsFilterOpen]           = useState(false);
-  const [activePhotoId, setActivePhotoId]        = useState<string|null>(null); // 全域追蹤展開的照片
+  const [activePhotoId, setActivePhotoId]        = useState<string|null>(null); 
 
   const mapContainerRef = useRef<HTMLDivElement|null>(null);
   const mapRef          = useRef<mapboxgl.Map|null>(null);
@@ -1008,16 +1182,14 @@ export default function ThreePage() {
     map.flyTo({center:[place.lng,place.lat],offset:(isExpand?(isMobile?[0,150]:[0,120]):(isMobile?[0,150]:[0,60])) as [number,number],zoom:isExpand?16.2:Math.max(curZ,15.5),pitch:isExpand?65:60,duration:1200,essential:true});
   },[isMobile]);
 
-  // 新增針對照片視角的鏡頭控制
   const focusPhoto=useCallback((place:PlaceAggregate)=>{
     const map=mapRef.current;if(!map)return;
     const curZ=map.getZoom();
-    // 把鏡頭偏移向下(offset Y 增加)，這樣天空中的照片會位於畫面中央
     map.flyTo({
       center:[place.lng,place.lat],
       offset:[0, isMobile ? 240 : 160] as [number,number],
       zoom: Math.max(curZ, 15.8),
-      pitch: 55, // 角度稍微低一點看上面
+      pitch: 55, 
       duration: 1000,
       essential: true
     });
@@ -1049,7 +1221,6 @@ export default function ThreePage() {
   const dispBlock   = dispPlace&&sheet.sessionId?dispPlace.blocks.find(b=>b.sessionId===sheet.sessionId)??null:null;
   const dispSummary = dispPlace?getPlaceSummary(dispPlace):null;
   
-  // 當照片在放大觀看時，把 bottom sheet 收起來
   const sheetOpen   = sheet.isOpen && !activePhotoId;
 
   useEffect(()=>{
@@ -1116,7 +1287,7 @@ export default function ThreePage() {
           onPointerMissed={()=>{
             if(selectedPlaceId){const pl=places.find(p=>p.placeId===selectedPlaceId);if(pl)focusPlace(pl,false);}
             setSelectedPlaceId(null);setSelectedSessionId(null);setHoverPlaceId(null);
-            setActivePhotoId(null); // 取消選擇照片
+            setActivePhotoId(null); 
             document.body.style.cursor='';setMapInteractivity(true);
           }}
         >
@@ -1128,7 +1299,6 @@ export default function ThreePage() {
 
           <TrajectoryManager places={places} sessions={ALL_SESSIONS} timeFilter={timeFilter} friendFilter={friendFilter} selectedPlaceId={selectedPlaceId} mapRef={mapRef} mapReady={mapReady}/>
 
-          {/* 全息環境與動態生命力系統 */}
           <HolographicEnvironment />
           <CyberTrafficSystem places={places} mapRef={mapRef} mapReady={mapReady} />
           <PopulationSystem places={places} mapRef={mapRef} mapReady={mapReady} />
