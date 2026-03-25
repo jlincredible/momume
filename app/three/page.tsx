@@ -1181,7 +1181,7 @@ export default function ThreePage() {
     map.flyTo({
       center:[place.lng,place.lat],
       offset:[0, isMobile ? 300 : 180] as [number,number],
-      zoom: 14.8, 
+      zoom: 13.8, 
       pitch: 65, 
       duration: 1000,
       essential: true
