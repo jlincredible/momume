@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
@@ -48,6 +48,22 @@ const PHOTO_THRESHOLD = 3; // min photos to show gallery; else show CyberFunnel
 function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)); }
 function heightFromMinutes(min: number) { return clamp(min * PX_PER_MIN, MIN_H, MAX_H); }
 
+/**
+ * Match BuildingStack's "top" Y.
+ * When building is selected we merge segments by `friendId`, so the floor count becomes unique friends count.
+ */
+function computeStackVisualTopY(blocks: PlaceAggregate['blocks'], isSelectedBuilding: boolean): number {
+  if (blocks.length === 0) return 0;
+  const gap = isSelectedBuilding ? 0.25 : 0.02;
+
+  const rawTotalH = blocks.reduce((s, b) => s + heightFromMinutes(b.minutes), 0);
+  const ratio = rawTotalH > MAX_BUILDING_H ? MAX_BUILDING_H / rawTotalH : 1;
+  const sumRenderH = rawTotalH * ratio; // = min(rawTotalH, MAX_BUILDING_H)
+
+  const floorCount = isSelectedBuilding ? new Set(blocks.map((b) => b.friendId)).size : blocks.length;
+  return sumRenderH + Math.max(0, floorCount - 1) * gap;
+}
+
 /* =========================
    Time helpers
 ========================= */
@@ -71,14 +87,16 @@ const FRIEND_NAMES:  Record<string,string> = { f_alex:'Alex', f_emily:'Emily', f
 const BASE_TIME = Date.now();
 const daysAgo = (days: number) => new Date(BASE_TIME - days * 86400000).toISOString();
 
-const IMG_CAFE  = 'https://picsum.photos/seed/cafe1/400/400';
-const IMG_STUDY = 'https://picsum.photos/seed/study1/400/400';
-const IMG_PARK  = 'https://picsum.photos/seed/park1/400/400';
-const IMG_VIBE  = 'https://picsum.photos/seed/vibe1/400/400';
-const IMG_GYM   = 'https://picsum.photos/seed/gym1/400/400';
-const IMG_R1    = 'https://picsum.photos/seed/randA/400/400';
-const IMG_R2    = 'https://picsum.photos/seed/randB/400/400';
-const IMG_R3    = 'https://picsum.photos/seed/randC/400/400';
+const THUMB_SIZE = 896;
+const picsum = (seed: string) => `https://picsum.photos/seed/${seed}/${THUMB_SIZE}/${THUMB_SIZE}`;
+const IMG_CAFE  = picsum('cafe1');
+const IMG_STUDY = picsum('study1');
+const IMG_PARK  = picsum('park1');
+const IMG_VIBE  = picsum('vibe1');
+const IMG_GYM   = picsum('gym1');
+const IMG_R1    = picsum('randA');
+const IMG_R2    = picsum('randB');
+const IMG_R3    = picsum('randC');
 
 const DEMO_SESSIONS: Session[] = [
   { id:'s1', placeId:'xinyi_library',   lat:25.0375, lng:121.5625, friendId:'f_alex',   minutes:40,  startedAt:daysAgo(40), hangoutType:'Study', tags:['focus'],    moodScore:4, notes:'Quiet morning.',          moments:[{id:'m1',  kind:'photo',thumb:IMG_STUDY}] },
@@ -91,11 +109,11 @@ const DEMO_SESSIONS: Session[] = [
   { id:'a1', placeId:'taipei_101',      lat:25.0339, lng:121.5645, friendId:'f_alex',   minutes:45,  startedAt:daysAgo(5),  hangoutType:'Custom',tags:['work'],     moodScore:3, notes:'Quick lunch meeting.',    moments:[{id:'ma1', kind:'photo',thumb:IMG_R3}]    },
   { id:'e1', placeId:'ntu_campus',      lat:25.0173, lng:121.5373, friendId:'f_emily',  minutes:120, startedAt:daysAgo(14), hangoutType:'Study', tags:['campus'],   moodScore:4, notes:'Studied together.',       moments:[{id:'ntu1',kind:'photo',thumb:IMG_STUDY}] },
   { id:'e2', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_emily',  minutes:90,  startedAt:daysAgo(12), hangoutType:'Hike',  tags:['walk'],     moodScore:5, notes:'Nice sunset walk.',       moments:[{id:'p1',  kind:'photo',thumb:IMG_PARK}]  },
-  { id:'e4', placeId:'zhongshan_cafe',  lat:25.0526, lng:121.5200, friendId:'f_emily',  minutes:150, startedAt:daysAgo(8),  hangoutType:'Chat',  tags:['coffee'],   moodScore:4, notes:'Deep talks.',            moments:[{id:'z1',  kind:'photo',thumb:IMG_CAFE}]  },
-  { id:'j1', placeId:'ntu_campus',      lat:25.0173, lng:121.5373, friendId:'f_jordan', minutes:200, startedAt:daysAgo(60), hangoutType:'Gym',   tags:['baseball'], moodScore:5, notes:'Team practice.',         moments:[{id:'g1',  kind:'photo',thumb:IMG_GYM}]   },
-  { id:'j2', placeId:'zhongshan_cafe',  lat:25.0526, lng:121.5200, friendId:'f_jordan', minutes:100, startedAt:daysAgo(4),  hangoutType:'Chat',  tags:['chill'],    moodScore:4, notes:'Corner cafe chill.',     moments:[{id:'z2',  kind:'photo',thumb:IMG_R1}]    },
+  { id:'e4', placeId:'zhongshan_cafe',  lat:25.0526, lng:121.5200, friendId:'f_emily',  minutes:150, startedAt:daysAgo(8),  hangoutType:'Chat',  tags:['coffee'],   moodScore:4, notes:'Deep talks.',             moments:[{id:'z1',  kind:'photo',thumb:IMG_CAFE}]  },
+  { id:'j1', placeId:'ntu_campus',      lat:25.0173, lng:121.5373, friendId:'f_jordan', minutes:200, startedAt:daysAgo(60), hangoutType:'Gym',   tags:['baseball'], moodScore:5, notes:'Team practice.',          moments:[{id:'g1',  kind:'photo',thumb:IMG_GYM}]   },
+  { id:'j2', placeId:'zhongshan_cafe',  lat:25.0526, lng:121.5200, friendId:'f_jordan', minutes:100, startedAt:daysAgo(4),  hangoutType:'Chat',  tags:['chill'],    moodScore:4, notes:'Corner cafe chill.',      moments:[{id:'z2',  kind:'photo',thumb:IMG_R1}]    },
   { id:'j3', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_jordan', minutes:100, startedAt:daysAgo(1),  hangoutType:'Hike',  tags:['chill'],    moodScore:5, notes:'Night walk.',             moments:[{id:'p2',  kind:'photo',thumb:IMG_PARK}]  },
-  { id:'c1', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_casey',  minutes:60,  startedAt:daysAgo(0),  hangoutType:'Hike',  tags:['run'],      moodScore:4, notes:'Morning 5K run.',        moments:[{id:'p3',  kind:'photo',thumb:IMG_R2}]    },
+  { id:'c1', placeId:'daan_park',       lat:25.0300, lng:121.5350, friendId:'f_casey',  minutes:60,  startedAt:daysAgo(0),  hangoutType:'Hike',  tags:['run'],      moodScore:4, notes:'Morning 5K run.',         moments:[{id:'p3',  kind:'photo',thumb:IMG_R2}]    },
 ];
 
 function generateDenseSessions(): Session[] {
@@ -113,7 +131,7 @@ function generateDenseSessions(): Session[] {
       tags: ['sim', types[i%types.length].toLowerCase()],
       moodScore: (1+(i%5)) as any,
       notes: `Memory block ${i}.`,
-      moments: hasPhoto ? [{id:`m_${i}`,kind:'photo' as const,thumb:`https://picsum.photos/seed/mem${i}/400/400`}] : [],
+      moments: hasPhoto ? [{id:`m_${i}`,kind:'photo' as const,thumb:picsum(`mem${i}`)}] : [],
     };
   });
 }
@@ -142,17 +160,44 @@ function aggregateSessions(sessions: Session[]): PlaceAggregate[] {
 ========================= */
 
 export type BlockVisualState = 'active' | 'filtered-dimmed' | 'muted';
-const MAT_CACHE = new Map<string,THREE.MeshStandardMaterial>();
+const MAT_CACHE = new Map<string,THREE.Material>();
 
 function buildMaterial(hex: string, vs: BlockVisualState, density: number) {
   const key = `${hex}|${vs}|${Math.floor(density*10)}`;
   if (MAT_CACHE.has(key)) return MAT_CACHE.get(key)!;
   const accent = new THREE.Color(hex);
   const dark   = new THREE.Color('#0b1020');
-  let mat: THREE.MeshStandardMaterial;
-  if (vs==='active')          mat = new THREE.MeshStandardMaterial({color:accent.clone().multiplyScalar(0.7),roughness:0.25,metalness:0.15,emissive:accent,emissiveIntensity:0.5*density});
-  else if (vs==='filtered-dimmed') mat = new THREE.MeshStandardMaterial({color:dark.clone().lerp(accent,0.15),roughness:0.6,metalness:0.1,emissive:accent,emissiveIntensity:0.1});
-  else                        mat = new THREE.MeshStandardMaterial({color:dark.clone().multiplyScalar(0.4),roughness:0.9,metalness:0,emissive:new THREE.Color('#000'),emissiveIntensity:0});
+  let mat: THREE.Material;
+  
+  if (vs === 'active') {
+    mat = new THREE.MeshPhysicalMaterial({
+      color: accent,
+      roughness: 0.15,
+      metalness: 0.05,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.1,
+      emissive: accent,
+      emissiveIntensity: 0.15 * density
+    });
+  } else if (vs === 'filtered-dimmed') {
+    mat = new THREE.MeshPhysicalMaterial({
+      color: dark.clone().lerp(accent, 0.2),
+      roughness: 0.5,
+      metalness: 0.1,
+      clearcoat: 0.3,
+      emissive: accent,
+      emissiveIntensity: 0.05
+    });
+  } else {
+    mat = new THREE.MeshStandardMaterial({
+      color: dark.clone().multiplyScalar(0.4),
+      roughness: 0.9,
+      metalness: 0,
+      emissive: new THREE.Color('#000'),
+      emissiveIntensity: 0
+    });
+  }
+  
   MAT_CACHE.set(key, mat);
   return mat;
 }
@@ -161,13 +206,11 @@ function ArchitecturalBlock({w=0.5,d=0.5,h,color,visualState,densityBoost,onPick
   w?:number;d?:number;h:number;color:string;visualState:BlockVisualState;densityBoost:number;onPick?:()=>void;
 }) {
   const mat = useMemo(()=>buildMaterial(color,visualState,densityBoost),[color,visualState,densityBoost]);
+  const cornerRadius = Math.min(0.22, w / 2, d / 2, h / 2 - 0.001);
+
   return (
     <group onPointerDown={e=>{e.stopPropagation();onPick?.();}}>
-      <RoundedBox args={[w,h,d]} radius={0.04} smoothness={4} material={mat}/>
-      <mesh position={[0,h/2-0.015*Math.min(1,densityBoost),0]}>
-        <boxGeometry args={[w+0.015,0.02,d+0.015]}/>
-        <meshStandardMaterial color={visualState==='active'?'#03050a':'#020305'} roughness={0.8}/>
-      </mesh>
+      <RoundedBox args={[w,h,d]} radius={cornerRadius} smoothness={10} material={mat}/>
     </group>
   );
 }
@@ -177,28 +220,37 @@ function ArchitecturalBlock({w=0.5,d=0.5,h,color,visualState,densityBoost,onPick
 ========================= */
 
 const HolographicMaterial = shaderMaterial(
-  {uTime:0,uTex:null,uColorB:new THREE.Color('#2DD4BF'),uOpacity:1.0,uHover:0,uActive:0,uDepth:0},
+  {uTime:0,uTex:null,uColorB:new THREE.Color('#2DD4BF'),uOpacity:1.0,uHover:0,uActive:0,uDepth:0,uClarity:1.0},
   `varying vec2 vUv;varying vec3 vWorldPos,vNormalW;uniform float uHover,uActive,uTime;
-   void main(){vUv=uv;vec3 pos=position;pos.y+=sin(uTime*1.8+uv.y*8.)*0.005*(1.-max(uActive,uHover));
+   void main(){vUv=uv;vec3 pos=position;float flutterAmt=0.0022*(1.-max(uActive,uHover));
+   pos.y+=sin(uTime*1.8+uv.y*8.)*flutterAmt;
    vec4 wp=modelMatrix*vec4(pos,1.);vWorldPos=wp.xyz;vNormalW=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*wp;}`,
   `varying vec2 vUv;varying vec3 vWorldPos,vNormalW;
-   uniform sampler2D uTex;uniform float uTime,uOpacity,uHover,uActive,uDepth;uniform vec3 uColorB;
+   uniform sampler2D uTex;uniform float uTime,uOpacity,uHover,uActive,uDepth,uClarity;uniform vec3 uColorB;
    void main(){
-     float e=smoothstep(.15,.95,distance(vUv,vec2(.5)));float rs=(0.001+0.002*uHover+0.003*uActive)*e;
+     float e=smoothstep(.12,.92,distance(vUv,vec2(.5)));
+     float rs=(0.00025+0.0006*uHover+0.001*uActive)*e;
      vec4 tR=texture2D(uTex,vUv+vec2(rs,0.)),tG=texture2D(uTex,vUv),tB=texture2D(uTex,vUv-vec2(rs,0.));
-     vec4 tc=vec4(tR.r,tG.g,tB.b,tG.a);tc.rgb*=sin(vUv.y*520.-uTime*5.2)*.035+.965;
+     vec4 tc=vec4(tR.r,tG.g,tB.b,tG.a);
+     float scanAmt=mix(0.012,0.035,1.-uClarity);
+     float scan=sin(vUv.y*420.-uTime*4.2)*scanAmt+1.;
+     tc.rgb*=mix(scan,1.,uClarity);
      float f=max(0.,dot(normalize(cameraPosition-vWorldPos),vNormalW));
-     float bw=0.02+uHover*.01+uActive*.01;
+     float bw=0.018+uHover*.008+uActive*.01;
      float b=step(1.-bw,vUv.x)+step(vUv.x,bw)+step(1.-bw,vUv.y)+step(vUv.y,bw);
-     vec3 col=mix(tc.rgb,uColorB*(1.2+uHover),b*f);
-     float df=clamp(1.-((uDepth-4.)/10.),.2,1.);df=mix(df,1.,uActive);
-     gl_FragColor=vec4(col*(0.8+f*.4+uHover*.2+uActive*.4),tc.a*uOpacity*mix(.85,1.,uHover+uActive*.8)*df);
+     vec3 col=mix(tc.rgb,uColorB*(1.15+uHover*0.15),b*f*0.85);
+     float df=clamp(1.-((uDepth-5.)/14.),0.78,1.);
+     df=mix(df,1.,uActive);
+     df=mix(1.,df,0.55+0.45*uClarity);
+     float bright=0.92+f*0.38+uHover*0.18+uActive*0.35;
+     float a=tc.a*uOpacity*mix(0.94,1.,uHover*0.5+uActive)*df;
+     gl_FragColor=vec4(col*bright,a);
    }`
 );
 extend({ HolographicMaterial });
 
 /* =========================
-   CyberFunnel ??shown when photos < PHOTO_THRESHOLD
+   CyberFunnel
 ========================= */
 
 function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalMinutes:number; blockCount:number }) {
@@ -209,7 +261,6 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
   const coreRef  = useRef<THREE.Mesh>(null);
 
   const LEVELS = 5;
-  // funnel: bottom is narrow, top is wide ??sits RIGHT above building top
   const funnelData = useMemo(()=>Array.from({length:LEVELS},(_,i)=>{
     const t = i/(LEVELS-1);
     return { y: t*1.8, radius: 0.22+t*0.65, opacity: 0.6-t*0.3, speed: 0.3+t*0.15 };
@@ -254,7 +305,6 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
 
   return (
     <group ref={groupRef}>
-      {/* Funnel rings */}
       {funnelData.map((fd,i)=>(
         <mesh key={i} ref={r=>{if(r)ringRefs.current[i]=r;}} position={[0,fd.y,0]} rotation={[-Math.PI/2,0,0]}>
           <torusGeometry args={[fd.radius,0.018,12,80]}/>
@@ -262,19 +312,16 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
         </mesh>
       ))}
 
-      {/* Base disk glow */}
       <mesh rotation={[-Math.PI/2,0,0]}>
         <circleGeometry args={[0.28,48]}/>
         <meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false}/>
       </mesh>
 
-      {/* Apex glow */}
       <mesh position={[0,1.9,0]}>
         <sphereGeometry args={[0.07,14,14]}/>
         <meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false}/>
       </mesh>
 
-      {/* Vertical beams */}
       {beamAngles.map((ang,i)=>{
         const br=0.5+((i%3)*0.12);
         return (
@@ -285,7 +332,6 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
         );
       })}
 
-      {/* Orbiting particles */}
       {particles.map((pd,i)=>(
         <mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}>
           <sphereGeometry args={[pd.size,5,5]}/>
@@ -293,13 +339,11 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
         </mesh>
       ))}
 
-      {/* Core sphere */}
       <mesh ref={coreRef}>
         <sphereGeometry args={[0.13,20,20]}/>
         <meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false}/>
       </mesh>
 
-      {/* Info label */}
       <Html center transform={false} occlude={false} distanceFactor={10} position={[1.2,0.9,0]}>
         <div style={{
           pointerEvents:'none', color:'white', fontFamily:'Inter,system-ui,sans-serif',
@@ -340,107 +384,260 @@ function MemoryMetaChip({color,title,subtitle,active}:{color:string;title:string
    MemoryCard
 ========================= */
 
-function MemoryCard({m,index,total,scrollRef,isActive,onMakeActive,onCancelActive,onSnapToCenter,onSelectSession,dragRef}:{
+function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,onCancelActive,onSnapToCenter,onSelectSession,dragRef,ringRadius}:{
   m:any;index:number;total:number;scrollRef:React.MutableRefObject<number>;isActive:boolean;
+  expandedMode:boolean;
   onMakeActive:()=>void;onCancelActive:()=>void;onSnapToCenter:(i:number)=>void;
   onSelectSession:(id:string)=>void;dragRef:React.MutableRefObject<{dragged:boolean}>;
+  ringRadius:number;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const matRef   = useRef<any>(null);
   const bgRef    = useRef<THREE.MeshBasicMaterial>(null);
-  const {camera} = useThree();
+  const {camera,gl} = useThree();
+  const worldPos = useMemo(()=>new THREE.Vector3(),[]);
   const [tex,setTex] = useState<THREE.Texture|null>(null);
   const [hovered,setHovered] = useState(false);
   const pressTimer = useRef<NodeJS.Timeout|null>(null);
+  const longPressTriggeredRef = useRef(false);
+  const [panelOpen,setPanelOpen] = useState(false);
+
+  const frameWireMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const frameGlowMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const frameMeshRef = useRef<THREE.Mesh>(null);
+
+  useEffect(()=>{
+    if(!isActive){
+      setPanelOpen(false);
+      return;
+    }
+    setPanelOpen(false);
+    const raf = requestAnimationFrame(()=>setPanelOpen(true));
+    return ()=>cancelAnimationFrame(raf);
+  },[isActive]);
 
   useEffect(()=>{
     if(!m.thumb)return;
     let ok=true;
-    new THREE.TextureLoader().load(m.thumb,t=>{if(!ok)return;t.colorSpace=THREE.SRGBColorSpace;setTex(t);},undefined,e=>console.warn(e));
+    const loader = new THREE.TextureLoader();
+    loader.load(m.thumb,t=>{
+      if(!ok)return;
+      t.colorSpace=THREE.SRGBColorSpace;
+      t.generateMipmaps=true;
+      t.minFilter=THREE.LinearMipmapLinearFilter;
+      t.magFilter=THREE.LinearFilter;
+      const maxA = typeof gl.capabilities.getMaxAnisotropy==='function'?gl.capabilities.getMaxAnisotropy():1;
+      t.anisotropy=Math.min(16,maxA);
+      setTex(t);
+    },undefined,e=>console.warn(e));
     return()=>{ok=false;};
-  },[m.thumb]);
+  },[m.thumb,gl]);
 
   useFrame((state)=>{
     if(!groupRef.current)return;
-    let offset=index-scrollRef.current;
+    let off=index-scrollRef.current;
     const half=total/2;
-    if(offset>half)offset-=total;
-    if(offset<-half)offset+=total;
-    const abs=Math.abs(offset),sign=Math.sign(offset)||1,isFront=abs<0.2;
+    if(off>half)off-=total;
+    if(off<-half)off+=total;
+    const abs=Math.abs(off);
+    const isFront=abs<0.22;
+    const n=Math.max(total,1);
+    const theta=(2*Math.PI/n)*(index-scrollRef.current);
+    const R=ringRadius;
+    let tx=R*Math.sin(theta);
+    let tz=R*Math.cos(theta);
+    let ty=Math.sin(state.clock.elapsedTime*1.35+index*0.62)*0.055;
+    const frontLift=(1-Math.min(abs,1.15))*0.22;
+    ty+=frontLift;
+    const coverPush=(1-Math.min(abs,1))*0.38;
+    const cx=-Math.sin(theta),cz=-Math.cos(theta);
+    tx+=cx*coverPush;
+    tz+=cz*coverPush;
+    let sc=0.72+Math.max(0,1-Math.min(abs,1.2)/1.2)*0.58+(isFront||hovered?0.1:0);
+    const coverTilt=THREE.MathUtils.clamp(-off*(Math.PI/Math.max(n*0.85,4)),-0.95,0.95);
+    const shouldRetreat = expandedMode && !isActive;
 
-    let tx=sign*(Math.min(abs,1)*1.5+Math.max(0,abs-1)*0.45);
-    let tz=-Math.min(abs,1)*0.8-Math.max(0,abs-1)*0.1;
-    let ty=Math.sin(state.clock.elapsedTime*1.5+index*0.7)*0.04;
-    let ry=-sign*Math.min(abs,1)*(Math.PI/3.8);
-    let sc=1.0-Math.min(abs,1)*0.12+(isFront||hovered?0.08:0);
-    if(isActive){tx=0;tz=2.8;ty=0.5;ry=0;sc=2.2;}
+    if(isActive){
+      tx = 0;
+      tz = R * 1.18;
+      ty = 0.36 + frontLift * 0.4;
+      sc = 2.35;
+    } else if (shouldRetreat) {
+      const retreat = 0.55 + Math.min(abs, 1) * 0.6;
+      tx *= 0.18;
+      tz -= retreat;
+      ty -= retreat * 0.08;
+      sc *= 0.72;
+    }
 
-    groupRef.current.position.x=THREE.MathUtils.lerp(groupRef.current.position.x,tx,0.14);
-    groupRef.current.position.y=THREE.MathUtils.lerp(groupRef.current.position.y,ty,0.14);
-    groupRef.current.position.z=THREE.MathUtils.lerp(groupRef.current.position.z,tz,0.14);
-    groupRef.current.rotation.y=THREE.MathUtils.lerp(groupRef.current.rotation.y,ry,0.14);
-    groupRef.current.scale.setScalar(THREE.MathUtils.lerp(groupRef.current.scale.x,Math.max(0.01,sc),0.14));
+    groupRef.current.position.x=THREE.MathUtils.lerp(groupRef.current.position.x,tx,0.16);
+    groupRef.current.position.y=THREE.MathUtils.lerp(groupRef.current.position.y,ty,0.16);
+    groupRef.current.position.z=THREE.MathUtils.lerp(groupRef.current.position.z,tz,0.16);
+    groupRef.current.scale.setScalar(THREE.MathUtils.lerp(groupRef.current.scale.x,Math.max(0.01,sc),0.16));
+
+    groupRef.current.getWorldPosition(worldPos);
+    const dx=camera.position.x-worldPos.x;
+    const dz=camera.position.z-worldPos.z;
+    const coverTiltForFace = isActive ? coverTilt * 0.06 : coverTilt;
+    const faceY=Math.atan2(dx,dz)+coverTiltForFace*(shouldRetreat?0.75:1);
+    groupRef.current.rotation.y=THREE.MathUtils.lerp(groupRef.current.rotation.y,faceY,0.22);
 
     if(matRef.current){
-      const wp=groupRef.current.getWorldPosition(new THREE.Vector3());
       matRef.current.uniforms.uTime.value=state.clock.elapsedTime;
-      matRef.current.uniforms.uDepth.value=wp.distanceTo(camera.position);
-      matRef.current.uniforms.uHover.value=THREE.MathUtils.lerp(matRef.current.uniforms.uHover.value,isFront?1:0,0.14);
-      matRef.current.uniforms.uActive.value=THREE.MathUtils.lerp(matRef.current.uniforms.uActive.value,isActive?1:0,0.14);
+      matRef.current.uniforms.uDepth.value=worldPos.distanceTo(camera.position);
+      const hoverTarget = expandedMode ? 0 : ((isFront||hovered)?1:0);
+      matRef.current.uniforms.uHover.value=THREE.MathUtils.lerp(matRef.current.uniforms.uHover.value, hoverTarget,0.16);
+      matRef.current.uniforms.uActive.value=THREE.MathUtils.lerp(matRef.current.uniforms.uActive.value,isActive?1:0,0.16);
+      if(matRef.current.uniforms.uOpacity)
+        matRef.current.uniforms.uOpacity.value=THREE.MathUtils.lerp(matRef.current.uniforms.uOpacity.value,isActive?1:(expandedMode?0.62:1),0.16);
+      if(matRef.current.uniforms.uClarity){
+        const clarityTarget = isActive ? 1 : (expandedMode ? 0.55 : (isFront||hovered ? 1 : 0.72));
+        matRef.current.uniforms.uClarity.value=THREE.MathUtils.lerp(matRef.current.uniforms.uClarity.value,clarityTarget,0.12);
+      }
     }
-    if(bgRef.current) bgRef.current.opacity=THREE.MathUtils.lerp(bgRef.current.opacity,isActive?0.3:isFront?0.15:0.05,0.14);
+    if(bgRef.current){
+      const bgTarget = isActive ? 0.34 : (shouldRetreat ? 0.035 : (isFront ? 0.14 : 0.06));
+      bgRef.current.opacity=THREE.MathUtils.lerp(bgRef.current.opacity,bgTarget,0.16);
+    }
+
+    if(frameWireMatRef.current){
+      const target = isActive ? 0.55 : 0;
+      frameWireMatRef.current.opacity = THREE.MathUtils.lerp(frameWireMatRef.current.opacity, target, 0.16);
+    }
+    if(frameGlowMatRef.current){
+      const t = state.clock.elapsedTime;
+      const pulse = 0.75 + Math.sin(t * 6) * 0.25;
+      const target = isActive ? 0.35 * pulse : 0;
+      frameGlowMatRef.current.opacity = THREE.MathUtils.lerp(frameGlowMatRef.current.opacity, target, 0.16);
+    }
   });
 
   return (
     <group ref={groupRef}
-      onPointerDown={e=>{e.stopPropagation();if(dragRef.current.dragged)return;pressTimer.current=setTimeout(()=>onMakeActive(),300);}}
+      onPointerDown={e=>{
+        e.stopPropagation();
+        if(dragRef.current.dragged)return;
+        longPressTriggeredRef.current=false;
+        pressTimer.current=setTimeout(()=>{
+          longPressTriggeredRef.current=true;
+          onSnapToCenter(index);
+          onMakeActive();
+          onSelectSession(m.sessionId);
+        },320);
+      }}
       onPointerUp={e=>{
         e.stopPropagation();if(pressTimer.current)clearTimeout(pressTimer.current);
         if(dragRef.current.dragged)return;
+        if(longPressTriggeredRef.current)return; 
         if(isActive){onCancelActive();return;}
         let off=index-scrollRef.current;
         const h=total/2;if(off>h)off-=total;if(off<-h)off+=total;
         if(Math.abs(off)<0.4)onSelectSession(m.sessionId);else onSnapToCenter(index);
       }}
-      onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);setHovered(false);document.body.style.cursor='';}}
+      onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);longPressTriggeredRef.current=false;setHovered(false);document.body.style.cursor='';}}
       onPointerOver={()=>{setHovered(true);document.body.style.cursor='pointer';}}
     >
       <mesh position={[0,0,-0.02]}>
         <planeGeometry args={[1.5,1.5]}/>
         <meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/>
       </mesh>
+      <mesh ref={frameMeshRef} position={[0,0,-0.045]}>
+        <planeGeometry args={[1.55,1.55]}/>
+        <meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false}/>
+      </mesh>
+      <mesh position={[0,0,-0.04]}>
+        <planeGeometry args={[1.55,1.55]}/>
+        <meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} wireframe/>
+      </mesh>
       {tex?(
         <mesh>
-          <planeGeometry args={[1.4,1.4]}/>
+          <planeGeometry args={[1.35,1.35]}/>
           {/* @ts-ignore */}
-          <holographicMaterial ref={matRef} uTex={tex} uColorB={new THREE.Color(m.color)} transparent depthWrite={true}/>
+          <holographicMaterial ref={matRef} uTex={tex} uColorB={new THREE.Color(m.color)} uClarity={1} transparent depthWrite={true}/>
         </mesh>
       ):(
-        <mesh><planeGeometry args={[1.4,1.4]}/><meshBasicMaterial color="#222" wireframe/></mesh>
+        <mesh><planeGeometry args={[1.35,1.35]}/><meshBasicMaterial color="#222" wireframe/></mesh>
       )}
-      <MemoryMetaChip color={m.color} title={m.hangoutType??'Memory'} subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`} active={isActive}/>
+      {!expandedMode && (
+        <MemoryMetaChip
+          color={m.color}
+          title={m.hangoutType??'Memory'}
+          subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`}
+          active={isActive}
+        />
+      )}
+
+      {isActive && (
+        <Html
+          center
+          transform={false}
+          occlude={false}
+          distanceFactor={10}
+          position={[0,-1.15,0]}
+        >
+          <div
+            style={{
+              pointerEvents: 'none',
+              width: 300,
+              padding: '12px 14px',
+              borderRadius: 16,
+              color: 'white',
+              fontFamily: 'system-ui, sans-serif',
+              background: 'rgba(18,24,36,0.76)',
+              border: `1px solid ${m.color}55`,
+              backdropFilter: 'blur(10px)',
+              boxShadow: `0 18px 50px ${m.color}22, 0 12px 32px rgba(0,0,0,0.5)`,
+              opacity: panelOpen ? 1 : 0,
+              transform: panelOpen ? 'translate(-50%, -50%) translateY(0px)' : 'translate(-50%, -50%) translateY(14px)',
+              transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease',
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: '0.02em' }}>
+              {m.hangoutType ?? 'Memory'}
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 6 }}>{m.startedAt ? fmtTime(m.startedAt) : ''}</div>
+            <div style={{ fontSize: 11, opacity: 0.9, marginTop: 8 }}>
+              {m.placeId} / {Math.round(m.minutes ?? 0)}m / {FRIEND_NAMES[m.friendId] ?? m.friendId}
+            </div>
+            <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.25, opacity: 0.95 }}>
+              {m.notes || (Array.isArray(m.tags) ? m.tags[0] : null) || moodLabel(m.moodScore ?? 3)}
+            </div>
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
 
 /* =========================
    MemoriesAboveBuilding
-   ??KEY FIX: anchorY = actualH only (no gapExtra), small fixed offset
 ========================= */
 
-function MemoriesAboveBuilding({blocks,buildingHeight,onSelectSession,isMobile,mapRef}:{
+function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSelectSession,isMobile,mapRef}:{
   blocks: PlaceAggregate['blocks'];
-  buildingHeight: number;   // just MAX capped building height, NO gapExtra
+  placeId: string;
+  stackTopY: number; 
+  selectedSessionId: string | null;
   onSelectSession:(sessionId:string)=>void;
   isMobile:boolean;
   mapRef:React.MutableRefObject<mapboxgl.Map|null>;
 }) {
-  // All moments from all blocks (not filtered by time)
-  const moments = useMemo(()=>blocks.flatMap(b=>b.moments.map(m=>({
-    ...m, sessionId:b.sessionId, color:b.color, startedAt:b.startedAt, hangoutType:b.hangoutType,
-  }))),[blocks]);
+  const moments = useMemo(()=>
+    blocks.flatMap((b)=>b.moments.map((m)=>({
+      ...m,
+      sessionId: b.sessionId,
+      placeId,
+      friendId: b.friendId,
+      minutes: b.minutes,
+      color: b.color,
+      startedAt: b.startedAt,
+      hangoutType: b.hangoutType,
+      tags: b.tags,
+      moodScore: b.moodScore,
+      notes: b.notes,
+    }))),
+  [blocks, placeId]);
 
-  // Dominant friend color for funnel
   const dominantColor = useMemo(()=>{
     const freq:Record<string,number>={};
     for(const b of blocks) freq[b.friendId]=(freq[b.friendId]??0)+b.minutes;
@@ -449,15 +646,14 @@ function MemoriesAboveBuilding({blocks,buildingHeight,onSelectSession,isMobile,m
   },[blocks]);
 
   const totalMinutes = useMemo(()=>blocks.reduce((s,b)=>s+b.minutes,0),[blocks]);
-
-  // ??Position gallery just 0.6 units above building top ??clean and close
-  const galleryY = buildingHeight + 0.6;
+  const galleryY = stackTopY + 0.55;
 
   const scrollRef = useRef(0);
   const targetRef = useRef(0);
   const groupRef  = useRef<THREE.Group>(null);
   const dragRef   = useRef({isDragging:false, startX:0, startScroll:0, dragged:false});
   const [activeId, setActiveId] = useState<string|null>(null);
+  const ringRadius = useMemo(() => clamp(1.55 + moments.length * 0.028, 1.62, 2.35), [moments.length]);
 
   const snapToCenter = useCallback((idx:number)=>{
     const total=moments.length;
@@ -473,7 +669,6 @@ function MemoriesAboveBuilding({blocks,buildingHeight,onSelectSession,isMobile,m
     if(!groupRef.current)return;
     if(!dragRef.current.isDragging&&!activeId) targetRef.current+=0.25*delta;
     scrollRef.current=THREE.MathUtils.lerp(scrollRef.current,targetRef.current,8.5*delta);
-    // gentle float
     groupRef.current.position.y=THREE.MathUtils.lerp(
       groupRef.current.position.y,
       galleryY+Math.sin(state.clock.elapsedTime*1.35)*0.05,
@@ -500,7 +695,12 @@ function MemoriesAboveBuilding({blocks,buildingHeight,onSelectSession,isMobile,m
     targetRef.current=Math.round(targetRef.current);
   };
 
-  // ?? Gate: fewer than PHOTO_THRESHOLD ??show CyberFunnel ??
+  useEffect(()=>{
+    if(!selectedSessionId){ setActiveId(null); return; }
+    const hit = moments.find(m=>m.sessionId===selectedSessionId);
+    if(hit) setActiveId(hit.id);
+  },[selectedSessionId, moments]);
+
   if (moments.length < PHOTO_THRESHOLD) {
     return (
       <group position={[0, galleryY, 0]}>
@@ -511,17 +711,20 @@ function MemoriesAboveBuilding({blocks,buildingHeight,onSelectSession,isMobile,m
 
   return (
     <group ref={groupRef} position={[0, galleryY, 0]}>
-      {/* Subtle floor ring */}
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.55,0]}>
-        <ringGeometry args={[1.4,2.3,32]}/>
-        <meshBasicMaterial color="#2DD4BF" transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}>
+        <ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/>
+        <meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false}/>
+      </mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}>
+        <ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/>
+        <meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} depthWrite={false}/>
       </mesh>
 
-      {/* Photos */}
       {moments.map((m,i)=>(
-        <MemoryCard key={m.id} m={m} index={i} total={moments.length}
+        <MemoryCard key={m.id} m={m} index={i} total={moments.length} ringRadius={ringRadius}
           scrollRef={scrollRef} dragRef={dragRef}
           isActive={activeId===m.id}
+          expandedMode={activeId!==null}
           onMakeActive={()=>setActiveId(m.id)}
           onCancelActive={()=>setActiveId(null)}
           onSnapToCenter={snapToCenter}
@@ -529,7 +732,6 @@ function MemoriesAboveBuilding({blocks,buildingHeight,onSelectSession,isMobile,m
         />
       ))}
 
-      {/* Invisible drag wall */}
       <mesh position={[0,0,0]} onPointerDown={onWallDown} onPointerMove={onWallMove} onPointerUp={onWallUp} onPointerOut={onWallUp} onPointerCancel={onWallUp}>
         <planeGeometry args={[10,4]}/>
         <meshBasicMaterial transparent opacity={0} depthWrite={false}/>
@@ -550,13 +752,54 @@ function BuildingStack({blocks,buildingBaseState,selectedSessionId,isSelectedBui
   const gapRef    = useRef(0);
 
   const {compressedBlocks,densityBoost} = useMemo(()=>{
-    const rawH=blocks.reduce((s,b)=>s+heightFromMinutes(b.minutes),0);
-    const ratio=rawH>MAX_BUILDING_H?MAX_BUILDING_H/rawH:1;
-    const density=Math.max(1,1/ratio);
+    const rawTotalH = blocks.reduce((s,b)=>s+heightFromMinutes(b.minutes),0);
+    const ratio = rawTotalH>MAX_BUILDING_H ? MAX_BUILDING_H/rawTotalH : 1;
+    const density = Math.max(1,1/ratio);
+
+    if(isSelectedBuilding){
+      const byFriend = new Map<string,{friendId:string;color:string;rawH:number;primarySessionId:string;primaryStartedAt:string;}>();
+      for(const b of blocks){
+        const cur = byFriend.get(b.friendId);
+        if(!cur){
+          byFriend.set(b.friendId,{
+            friendId: b.friendId,
+            color: b.color,
+            rawH: heightFromMinutes(b.minutes),
+            primarySessionId: b.sessionId,
+            primaryStartedAt: b.startedAt,
+          });
+          continue;
+        }
+        cur.rawH += heightFromMinutes(b.minutes);
+        if(new Date(b.startedAt).getTime() > new Date(cur.primaryStartedAt).getTime()){
+          cur.primarySessionId = b.sessionId;
+          cur.primaryStartedAt = b.startedAt;
+        }
+      }
+
+      const segments = Array.from(byFriend.values()).sort((a,b)=>b.rawH-a.rawH);
+      let y=0;
+      const mapped = segments.map(seg=>{
+        const h = seg.rawH * ratio;
+        const cy = y + h/2;
+        y += h;
+        return {
+          sessionId: seg.primarySessionId,
+          friendId: seg.friendId,
+          color: seg.color,
+          startedAt: seg.primaryStartedAt,
+          renderH: h,
+          currentY: cy,
+        };
+      });
+
+      return {compressedBlocks: mapped as any, densityBoost: density};
+    }
+
     let y=0;
     const mapped=blocks.map(b=>{const h=heightFromMinutes(b.minutes)*ratio;const cy=y+h/2;y+=h;return{...b,renderH:h,currentY:cy};});
     return {compressedBlocks:mapped,densityBoost:density};
-  },[blocks]);
+  },[blocks,isSelectedBuilding]);
 
   useFrame((_,delta)=>{
     const target=isSelectedBuilding?0.25:0.02;
@@ -568,10 +811,17 @@ function BuildingStack({blocks,buildingBaseState,selectedSessionId,isSelectedBui
 
   return (
     <group onPointerDown={e=>{if(!isSelectedBuilding){e.stopPropagation();onPickBuilding();}}}>
-      {compressedBlocks.map((b,i)=>{
+      {compressedBlocks.map((b:any, i:number)=>{
         let vs:BlockVisualState='active';
         if(buildingBaseState==='muted') vs='muted';
-        else if(selectedSessionId) vs=b.sessionId===selectedSessionId?'active':'filtered-dimmed';
+        else if(selectedSessionId){
+          if(isSelectedBuilding){
+            const activeFriendId = blocks.find(x=>x.sessionId===selectedSessionId)?.friendId ?? null;
+            vs = activeFriendId && b.friendId===activeFriendId ? 'active' : 'filtered-dimmed';
+          } else {
+            vs = b.sessionId===selectedSessionId?'active':'filtered-dimmed';
+          }
+        }
         return (
           <group key={b.sessionId} ref={r=>{floorsRef.current[i]=r;}}>
             <ArchitecturalBlock h={b.renderH} color={b.color} visualState={vs} densityBoost={densityBoost}
@@ -642,7 +892,7 @@ function SingleTrajectoryLine({sequence,places,mapRef,mapReady,timeFilter,friend
     const map=mapRef.current;
     const zs=Math.pow(2,map.getZoom()-BASE_ZOOM);
     const pos:number[]=[];
-    const c:number[][]=[];
+    const c:number[]=[];
     let nan=false;
 
     const getW=(lng:number,lat:number,pid:string,t:THREE.Vector3)=>{
@@ -676,13 +926,13 @@ function SingleTrajectoryLine({sequence,places,mapRef,mapReady,timeFilter,friend
         let intensity=0.08;
         if(dh>=0&&dh<=TAIL){const tt=1-dh/TAIL;intensity=Math.pow(tt,TF)*HB;if(dh<3)intensity+=(1-dh/3)*HB*0.6;}
         tc.copy(ca).lerp(cb,j/pps).multiplyScalar(intensity);
-        c.push([tc.r,tc.g,tc.b]);
+        c.push(tc.r,tc.g,tc.b);
       }
     }
 
     if(!nan&&pos.length>0){
       lineRef.current.geometry.setPositions(pos);
-      lineRef.current.geometry.setColors(c.flat());
+      lineRef.current.geometry.setColors(c);
       if(lineRef.current.material){lineRef.current.material.vertexColors=true;lineRef.current.material.needsUpdate=true;}
     }
   });
@@ -781,12 +1031,8 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
         const scH=baseState==='active'&&isHover?1.15:1.0;
         const yOff=(baseState==='muted'?-0.03:0)+(baseState==='active'&&isHover?0.035:0);
 
-        // ??buildingHeight = just the visual height of blocks (no gap)
-        const buildingHeight=Math.min(visibleBlocks.reduce((s,b)=>s+heightFromMinutes(b.minutes),0),MAX_BUILDING_H);
-
-        // anchorY for the HTML card (unchanged)
-        const gapExtra=isSel?visibleBlocks.length*0.25:0;
-        const anchorY=Math.max(0.9,(buildingHeight+gapExtra)*0.55);
+        const stackTopY = computeStackVisualTopY(visibleBlocks, isSel);
+        const anchorY = Math.max(0.9, stackTopY * 0.55);
 
         const summary=isSel?getPlaceSummary({...p,blocks:visibleBlocks}):null;
         const selBlock=isSel&&selectedSessionId?visibleBlocks.find(b=>b.sessionId===selectedSessionId)??null:null;
@@ -805,11 +1051,12 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
                 onPickFloor={sid=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(sid);onFocusPlace(p,true);}}
               />
 
-              {/* ??Gallery sits just above building ??pass buildingHeight only, NO gapExtra */}
               {isSel&&(
                 <MemoriesAboveBuilding
                   blocks={p.blocks}
-                  buildingHeight={buildingHeight}
+                  placeId={p.placeId}
+                  stackTopY={stackTopY}
+                  selectedSessionId={selectedSessionId}
                   onSelectSession={sid=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(sid);onFocusPlace(p,true);}}
                   isMobile={isMobile}
                   mapRef={mapRef}
@@ -952,7 +1199,7 @@ export default function ThreePage() {
           style={{display:'flex',alignItems:'center',gap:8,background:'rgba(16,20,28,0.85)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.15)',padding:'10px 18px',borderRadius:999,color:'white',fontWeight:600,fontSize:14,boxShadow:'0 8px 32px rgba(0,0,0,0.4)',cursor:'pointer'}}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          {`${timeLabel} ??${friendLabel}`}
+          {`${timeLabel}  ${friendLabel}`}
           {friendFilter!=='all'&&<div style={{width:8,height:8,borderRadius:'50%',background:FRIEND_COLORS[friendFilter],boxShadow:`0 0 8px ${FRIEND_COLORS[friendFilter]}`}}/>}
         </button>
 
@@ -982,7 +1229,6 @@ export default function ThreePage() {
         )}
       </div>
 
-      {/* ??Canvas with eventSource */}
       <div style={{position:'absolute',inset:0,zIndex:10,pointerEvents:'none'}}>
         <Canvas eventSource={mapContainerRef as unknown as React.RefObject<HTMLElement>} style={{pointerEvents:'none'}} shadows={false} camera={{position:[9,7,9],fov:40}}
           gl={{antialias:true,toneMapping:THREE.ACESFilmicToneMapping,toneMappingExposure:1.35}}
@@ -1013,7 +1259,6 @@ export default function ThreePage() {
         </Canvas>
       </div>
 
-      {/* Mobile sheet */}
       {isMobile&&(
         <div style={{position:'absolute',left:12,right:12,bottom:`calc(12px + env(safe-area-inset-bottom))`,zIndex:30,pointerEvents:sheetOpen?'auto':'none'}}
           onPointerDown={e=>e.stopPropagation()}
@@ -1111,4 +1356,3 @@ function SessionCard({placeId,session,onBack,onOpenFull,onClose}:{placeId:string
     </div>
   </CardShell>);
 }
-

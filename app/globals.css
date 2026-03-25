@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Force Mapbox cursor */
+.mapboxgl-canvas {
+  cursor: grab !important;
+}
+
+.mapboxgl-canvas:active {
+  cursor: grabbing !important;
+}
+
+/* Mapbox drag state class */
+.mapboxgl-map.mapboxgl-interactive:active .mapboxgl-canvas {
+  cursor: grabbing !important;
+}
