@@ -1334,7 +1334,7 @@ function PlaceCard({placeId,summary,timeFilter,friendFilter,onPickFriend,onClose
   </CardShell>);
 }
 
-function SessionCard({placeId,session,onBack,onOpenFull,onClose}:{placeId:string;session:PlaceAggregate['blocks'][number];onBack:void;onOpenFull:void;onClose:void;}){
+function SessionCard({placeId,session,onBack,onOpenFull,onClose}:{placeId:string;session:PlaceAggregate['blocks'][number];onBack:()=>void;onOpenFull:()=>void;onClose:()=>void;}){
   const name=FRIEND_NAMES[session.friendId]??session.friendId;
   const color=FRIEND_COLORS[session.friendId]??'#888';
   return(<CardShell>
