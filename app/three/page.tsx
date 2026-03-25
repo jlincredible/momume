@@ -267,17 +267,17 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
       {funnelData.map((fd,i)=>(
         <mesh key={i} ref={r=>{if(r)ringRefs.current[i]=r;}} position={[0,fd.y,0]} rotation={[-Math.PI/2,0,0]}>
           <torusGeometry args={[fd.radius,0.018,12,80]}/>
-          <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} depthWrite={false}/>
         </mesh>
       ))}
-      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} /></mesh>
-      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       {beamAngles.map((ang,i)=>{
         const br=0.5+((i%3)*0.12);
-        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} /></mesh>);
+        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>);
       })}
-      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} /></mesh>))}
-      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} /></mesh>
+      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>))}
+      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       <Html center transform={false} occlude={false} distanceFactor={10} position={[1.2,0.9,0]}>
         <div style={{ pointerEvents:'none', color:'white', fontFamily:'Inter,system-ui,sans-serif', width:128, padding:'10px 13px', borderRadius:12, background:'rgba(8,14,24,0.75)', border:`1px solid ${color}44`, backdropFilter:'blur(8px)', boxShadow:`0 0 20px ${color}22` }}>
           <div style={{fontSize:9,letterSpacing:'0.15em',opacity:0.55,marginBottom:3}}>PLACE ENERGY</div>
@@ -299,8 +299,8 @@ function MemoryMetaChip({color,title,subtitle,active}:{color:string;title:string
   useFrame(({clock})=>{ if(!ref.current)return; ref.current.position.y=THREE.MathUtils.lerp(ref.current.position.y,active?0.38+Math.sin(clock.elapsedTime*1.5)*0.01:0.22,0.12); });
   return (
     <group ref={ref} position={[1.45,0.22,0.08]}>
-      <mesh><planeGeometry args={[1.0,0.45]}/><meshBasicMaterial color="#0d1626" transparent opacity={active?0.85:0} /></mesh>
-      <mesh position={[0,0,0.002]}><planeGeometry args={[1.04,0.49]}/><meshBasicMaterial color={color} transparent opacity={active?0.3:0} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh><planeGeometry args={[1.0,0.45]}/><meshBasicMaterial color="#0d1626" transparent opacity={active?0.85:0} depthWrite={false}/></mesh>
+      <mesh position={[0,0,0.002]}><planeGeometry args={[1.04,0.49]}/><meshBasicMaterial color={color} transparent opacity={active?0.3:0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       {active&&<Html center transform={false} occlude={false} style={{pointerEvents:'none',width:'140px',transform:'translate(-50%,-50%)',color:'white',fontFamily:'system-ui,sans-serif',textShadow:'0 0 10px rgba(0,0,0,0.8)'}}>
         <div style={{fontSize:13,fontWeight:700,lineHeight:1.15}}>{title}</div>
         <div style={{fontSize:11,opacity:0.72,marginTop:4}}>{subtitle}</div>
@@ -320,7 +320,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
   onSelectSession:(id:string, fromPhoto?:boolean)=>void;dragRef:React.MutableRefObject<{dragged:boolean}>;
   ringRadius:number;isMobile:boolean;
 }) {
-  const router = useRouter(); // 恢復 useRouter 以供卡片內部使用
+  const router = useRouter(); 
   const groupRef = useRef<THREE.Group>(null);
   const matRef   = useRef<any>(null);
   const bgRef    = useRef<THREE.MeshBasicMaterial>(null);
@@ -391,7 +391,8 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
       tx = 0;
       tz = R * 1.18;
       ty = 0.36 + frontLift * 0.4;
-      sc = 2.35;
+      // ⚠️ 修正：手機版將卡片比例降為 1.6，電腦版保持 2.35
+      sc = isMobile ? 1.6 : 2.35;
     } else if (shouldRetreat) {
       const retreat = 0.55 + Math.min(abs, 1) * 0.6;
       tx *= 0.18;
@@ -442,8 +443,8 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
     }
   });
 
-  // ⚠️ 手機版排在照片正下方，電腦版排在照片左側
-  const htmlPos = isMobile ? [0, -2.0, 0] : [-1.6, 0, 0];
+  // ⚠️ 修正：因為照片縮小了，手機版的卡片往上提一點，才不會跟照片離太遠
+  const htmlPos = isMobile ? [0, -1.4, 0] : [-1.6, 0, 0];
 
   return (
     <group ref={groupRef}
@@ -473,9 +474,9 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
       onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);longPressTriggeredRef.current=false;setHovered(false);document.body.style.cursor='';}}
       onPointerOver={()=>{setHovered(true);document.body.style.cursor='pointer';}}
     >
-      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} /></mesh>
-      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} /></mesh>
-      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} wireframe/></mesh>
+      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} wireframe/></mesh>
       {tex?(
         <mesh><planeGeometry args={[1.35,1.35]}/>
           {/* @ts-ignore */}
@@ -488,20 +489,21 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         <MemoryMetaChip color={m.color} title={m.hangoutType??'Memory'} subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`} active={isActive} />
       )}
 
-      {/* ⚠️ 完整恢復：包含所有的 Session 資訊與操作按鈕，且已根據手機/電腦排版 */}
+      {/* ⚠️ 修正：加入 maxWidth 限制防呆，確保手機上絕不會爆框 */}
       {isActive && (
         <Html center transform={false} occlude={false} distanceFactor={10} position={htmlPos as [number,number,number]}>
           <div
             style={{
               pointerEvents: 'auto',
-              width: 320,
+              width: isMobile ? 300 : 320, // 手機版稍微收窄一點
+              maxWidth: '85vw',            // 防呆機制，保證不超出螢幕
               background: 'rgba(22, 28, 40, 0.85)',
               borderRadius: 16,
               border: `1px solid ${m.color}66`,
               backdropFilter: 'blur(20px)',
               boxShadow: `0 18px 50px ${m.color}33, 0 12px 32px rgba(0,0,0,0.6)`,
               opacity: panelOpen ? 1 : 0,
-              transform: panelOpen ? 'translateY(0px) scale(1)' : 'translateY(10px) scale(0.95)',
+              transform: panelOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -40%) scale(0.95)',
               transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease',
             }}
           >
@@ -615,8 +617,8 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
 
   return (
     <group ref={groupRef} position={[0, galleryY, 0]}>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} /></mesh>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       {moments.map((m,i)=>(
         <MemoryCard key={m.id} m={m} index={i} total={moments.length} ringRadius={ringRadius}
           scrollRef={scrollRef} dragRef={dragRef} isMobile={isMobile}
@@ -726,8 +728,8 @@ function PulseRing({isActive,isHover,muted,onPick}:{isActive:boolean;isHover:boo
   if(muted)return null;
   return (
     <group position={[0,0.01,0]} rotation={[-Math.PI/2,0,0]} onPointerDown={e=>{e.stopPropagation();onPick();}}>
-      <mesh><ringGeometry args={[0.45,0.6,44]}/><meshBasicMaterial color="#fff" transparent opacity={isActive?0.4:isHover?0.28:0.18}/></mesh>
-      {isActive&&<mesh ref={meshRef} position={[0,0,0.001]}><ringGeometry args={[0.6,0.75,44]}/><meshBasicMaterial ref={matRef} color="#2DD4BF" transparent opacity={0.3}/></mesh>}
+      <mesh><ringGeometry args={[0.45,0.6,44]}/><meshBasicMaterial color="#fff" transparent opacity={isActive?0.4:isHover?0.28:0.18} depthWrite={false}/></mesh>
+      {isActive&&<mesh ref={meshRef} position={[0,0,0.001]}><ringGeometry args={[0.6,0.75,44]}/><meshBasicMaterial ref={matRef} color="#2DD4BF" transparent opacity={0.3} depthWrite={false}/></mesh>}
     </group>
   );
 }
@@ -790,8 +792,8 @@ function HolographicEnvironment() {
   });
   return (
     <group ref={groupRef} position={[0, 6, 0]}>
-      {Array.from({ length: 4 }).map((_, i) => (<group key={`cloud-${i}`} position={[-15 + i * 8, 2 + Math.random() * 2, -5 + Math.random() * 10]} userData={{ type: 'cloud', speed: 0.2 + Math.random() * 0.3 }} scale={1 + Math.random()}><mesh geometry={cloudGeo} position={[0, 0, 0]}><meshBasicMaterial color="#2DD4BF" transparent opacity={0.03} blending={THREE.AdditiveBlending}/></mesh><mesh geometry={cloudGeo} position={[0.8, 0, 0]} scale={0.8}><meshBasicMaterial color="#2DD4BF" transparent opacity={0.03} blending={THREE.AdditiveBlending}/></mesh></group>))}
-      {Array.from({ length: 5 }).map((_, i) => (<group key={`bird-${i}`} userData={{ type: 'bird', speed: 0.1 + Math.random() * 0.1, origin: [0, Math.random(), 0] }}><mesh geometry={birdGeo} position={[0.1, 0, 0]} rotation={[0, Math.PI / 6, 0]}><meshBasicMaterial color="#7ef9ff" transparent opacity={0.4} blending={THREE.AdditiveBlending} /></mesh><mesh geometry={birdGeo} position={[-0.1, 0, 0]} rotation={[0, -Math.PI / 6, 0]}><meshBasicMaterial color="#7ef9ff" transparent opacity={0.4} blending={THREE.AdditiveBlending} /></mesh></group>))}
+      {Array.from({ length: 4 }).map((_, i) => (<group key={`cloud-${i}`} position={[-15 + i * 8, 2 + Math.random() * 2, -5 + Math.random() * 10]} userData={{ type: 'cloud', speed: 0.2 + Math.random() * 0.3 }} scale={1 + Math.random()}><mesh geometry={cloudGeo} position={[0, 0, 0]}><meshBasicMaterial color="#2DD4BF" transparent opacity={0.03} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh><mesh geometry={cloudGeo} position={[0.8, 0, 0]} scale={0.8}><meshBasicMaterial color="#2DD4BF" transparent opacity={0.03} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh></group>))}
+      {Array.from({ length: 5 }).map((_, i) => (<group key={`bird-${i}`} userData={{ type: 'bird', speed: 0.1 + Math.random() * 0.1, origin: [0, Math.random(), 0] }}><mesh geometry={birdGeo} position={[0.1, 0, 0]} rotation={[0, Math.PI / 6, 0]}><meshBasicMaterial color="#7ef9ff" transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh><mesh geometry={birdGeo} position={[-0.1, 0, 0]} rotation={[0, -Math.PI / 6, 0]}><meshBasicMaterial color="#7ef9ff" transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh></group>))}
     </group>
   );
 }
@@ -834,7 +836,7 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
     g.translate(0, 0.3, 0); 
     return g;
   }, []);
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }), []);
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }), []);
 
   useFrame((state) => {
     if (!mapReady || !mapRef.current || size.width === 0 || !headMeshRef.current || !bodyMeshRef.current || stateRef.current.length === 0) return;
@@ -940,7 +942,7 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
     g.translate(0, 0.3, 0); 
     return g;
   }, []);
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending }), []);
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }), []);
 
   useFrame((state) => {
     if (!mapReady || !mapRef.current || size.width === 0 || !headMeshRef.current || !bodyMeshRef.current || stateRef.current.length === 0) return;
@@ -1175,13 +1177,13 @@ export default function ThreePage() {
     map.flyTo({center:[place.lng,place.lat],offset:(isExpand?(isMobile?[0,150]:[0,120]):(isMobile?[0,150]:[0,60])) as [number,number],zoom:isExpand?16.2:Math.max(curZ,15.5),pitch:isExpand?60:50,duration:1200,essential:true});
   },[isMobile]);
 
-  // 全新攝影機視角：拉遠 Zoom，並大幅向下偏移
+  // ⚠️ 全新攝影機視角：拉遠 Zoom，並大幅向下偏移
   const focusPhoto=useCallback((place:PlaceAggregate)=>{
     const map=mapRef.current;if(!map)return;
     map.flyTo({
       center:[place.lng,place.lat],
-      offset:[0, isMobile ? 300 : 180] as [number,number],
-      zoom: 13.8, 
+      offset:[0, isMobile ? 180 : 180] as [number,number], // 降低 Y 軸偏移，讓照片不會頂到最上面
+      zoom: isMobile ? 13.2 : 13.8,  // 手機版稍微退後一點，避免照片過大
       pitch: 65, 
       duration: 1000,
       essential: true
@@ -1214,7 +1216,6 @@ export default function ThreePage() {
   const dispBlock   = dispPlace&&sheet.sessionId?dispPlace.blocks.find(b=>b.sessionId===sheet.sessionId)??null:null;
   const dispSummary = dispPlace?getPlaceSummary(dispPlace):null;
   
-  // 當照片在放大時，把底部 Modal 收起
   const sheetOpen   = sheet.isOpen && !activePhotoId;
 
   useEffect(()=>{
