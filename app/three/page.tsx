@@ -78,11 +78,16 @@ function fmtTime(iso: string) { const d = getTZDate(iso), pad = (n:number)=>Stri
 function moodLabel(score: number) { if(score>=5)return'Excellent';if(score>=4)return'Good';if(score>=3)return'Ok';if(score>=2)return'Low';return'Bad'; }
 
 /* =========================
-   Data
+   Data (更新了色票，對應圖片中飽和、乾淨的顏色)
 ========================= */
 
-const FRIEND_COLORS: Record<string,string> = { f_alex:'#89DEEB', f_emily:'#E5A4B4', f_jordan:'#9CBEA6', f_casey:'#D8B998' };
-const FRIEND_NAMES:  Record<string,string> = { f_alex:'Alex', f_emily:'Emily', f_jordan:'Jordan', f_casey:'Casey' };
+const FRIEND_COLORS: Record<string,string> = { 
+  f_alex:'#E04242',   // 紅色 ( Liam )
+  f_emily:'#4A89F3',  // 藍色 ( Sarah )
+  f_jordan:'#C4A674', // 金色/沙色 ( Chris )
+  f_casey:'#21B188'   // 翠綠色 ( Jade )
+};
+const FRIEND_NAMES:  Record<string,string> = { f_alex:'Liam', f_emily:'Sarah', f_jordan:'Chris', f_casey:'Jade' };
 
 const BASE_TIME = Date.now();
 const daysAgo = (days: number) => new Date(BASE_TIME - days * 86400000).toISOString();
@@ -156,7 +161,7 @@ function aggregateSessions(sessions: Session[]): PlaceAggregate[] {
 }
 
 /* =========================
-   Materials
+   Materials (保留了透明塗層 MeshPhysicalMaterial 達到乾淨的反光感)
 ========================= */
 
 export type BlockVisualState = 'active' | 'filtered-dimmed' | 'muted';
@@ -177,7 +182,7 @@ function buildMaterial(hex: string, vs: BlockVisualState, density: number) {
       clearcoat: 0.8,
       clearcoatRoughness: 0.1,
       emissive: accent,
-      emissiveIntensity: 0.15 * density
+      emissiveIntensity: 0.15 * density // 降低自發光，讓場景燈光打出漂亮的邊緣反光
     });
   } else if (vs === 'filtered-dimmed') {
     mat = new THREE.MeshPhysicalMaterial({
@@ -206,11 +211,17 @@ function ArchitecturalBlock({w=0.5,d=0.5,h,color,visualState,densityBoost,onPick
   w?:number;d?:number;h:number;color:string;visualState:BlockVisualState;densityBoost:number;onPick?:()=>void;
 }) {
   const mat = useMemo(()=>buildMaterial(color,visualState,densityBoost),[color,visualState,densityBoost]);
-  const cornerRadius = Math.min(0.22, w / 2, d / 2, h / 2 - 0.001);
-
+  
+  // 還原了有稜有角的幾何體 (小圓角 radius=0.04)
   return (
     <group onPointerDown={e=>{e.stopPropagation();onPick?.();}}>
-      <RoundedBox args={[w,h,d]} radius={cornerRadius} smoothness={10} material={mat}/>
+      <RoundedBox args={[w,h,d]} radius={0.04} smoothness={4} material={mat}/>
+      
+      {/* 還原了屋頂邊緣貼片结构 */}
+      <mesh position={[0,h/2-0.015*Math.min(1,densityBoost),0]}>
+        <boxGeometry args={[w+0.015,0.02,d+0.015]}/>
+        <meshStandardMaterial color={visualState==='active'?'#03050a':'#020305'} roughness={0.8}/>
+      </mesh>
     </group>
   );
 }
@@ -1323,7 +1334,7 @@ function PlaceCard({placeId,summary,timeFilter,friendFilter,onPickFriend,onClose
   </CardShell>);
 }
 
-function SessionCard({placeId,session,onBack,onOpenFull,onClose}:{placeId:string;session:PlaceAggregate['blocks'][number];onBack:()=>void;onOpenFull:()=>void;onClose:()=>void;}){
+function SessionCard({placeId,session,onBack,onOpenFull,onClose}:{placeId:string;session:PlaceAggregate['blocks'][number];onBack:void;onOpenFull:void;onClose:void;}){
   const name=FRIEND_NAMES[session.friendId]??session.friendId;
   const color=FRIEND_COLORS[session.friendId]??'#888';
   return(<CardShell>
