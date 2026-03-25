@@ -795,7 +795,6 @@ function HolographicEnvironment() {
   );
 }
 
-// 2. 光軌交通系統 (車輛在 Places 之間穿梭 - 修正轉向並放大5倍)
 function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggregate[], mapRef: React.MutableRefObject<mapboxgl.Map|null>, mapReady: boolean }) {
   const carCount = Math.min(places.length * 2, 30);
   const headMeshRef = useRef<THREE.InstancedMesh>(null);
@@ -806,7 +805,7 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
   const vec = useMemo(() => new THREE.Vector3(), []);
   const curPos = useMemo(() => new THREE.Vector3(), []);
   const nextPos = useMemo(() => new THREE.Vector3(), []);
-  const targetPos = useMemo(() => new THREE.Vector3(), []); // 優化: 避免使用 clone
+  const targetPos = useMemo(() => new THREE.Vector3(), []); 
   const { camera, size } = useThree();
 
   useEffect(() => {
@@ -820,7 +819,6 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
       stateRef.current[idx] = p1.lng; stateRef.current[idx+1] = p1.lat;
       stateRef.current[idx+2] = p2.lng; stateRef.current[idx+3] = p2.lat;
       stateRef.current[idx+4] = Math.random(); 
-      // ⚠️ 速度降為 0.25 倍 (0.001~0.003 -> 0.00025~0.0005)
       stateRef.current[idx+5] = 0.00025 + Math.random() * 0.0005; 
     }
   }, [places, carCount]);
@@ -835,6 +833,7 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
     g.translate(0, 0.3, 0); 
     return g;
   }, []);
+  // Removed depthWrite=false here as requested
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }), []);
 
   useFrame((state) => {
@@ -875,7 +874,6 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
 
       dummy.position.copy(curPos);
       
-      // ⚠️ 修正: 強制面向水平目標，確保絕對直立
       targetPos.copy(dummy.position);
       targetPos.x += nextPos.x - curPos.x;
       targetPos.z += nextPos.z - curPos.z;
@@ -883,11 +881,9 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
         dummy.lookAt(targetPos);
       }
 
-      // 稍微提高並加上走路彈跳
       const bounce = Math.abs(Math.sin(t * 15 + i)); 
       dummy.position.y += 0.05 * zs + bounce * 0.05 * zs; 
 
-      // ⚠️ 修正: 放大 5 倍 (0.08 -> 0.4)
       dummy.scale.set(0.4 * zs, 0.4 * zs, 0.4 * zs);
       
       dummy.updateMatrix();
@@ -901,13 +897,12 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
   if (places.length < 2) return null;
   return (
     <group>
-      <instancedMesh ref={headMeshRef} args={[headGeo, mat, carCount]} depthWrite={false} />
-      <instancedMesh ref={bodyMeshRef} args={[bodyGeo, mat, carCount]} depthWrite={false} />
+      <instancedMesh ref={headMeshRef} args={[headGeo, mat, carCount]} />
+      <instancedMesh ref={bodyMeshRef} args={[bodyGeo, mat, carCount]} />
     </group>
   );
 }
 
-// 3. 全息行人系統 (在 Places 附近徘徊 - 同步修正並放大)
 function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate[], mapRef: React.MutableRefObject<mapboxgl.Map|null>, mapReady: boolean }) {
   const agentCount = Math.min(places.length * 5, 100);
   const headMeshRef = useRef<THREE.InstancedMesh>(null);
@@ -918,7 +913,7 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
   const vec = useMemo(() => new THREE.Vector3(), []);
   const curPos = useMemo(() => new THREE.Vector3(), []);
   const nextPos = useMemo(() => new THREE.Vector3(), []);
-  const targetPos = useMemo(() => new THREE.Vector3(), []); // 優化
+  const targetPos = useMemo(() => new THREE.Vector3(), []); 
   const { camera, size } = useThree();
 
   useEffect(() => {
@@ -931,7 +926,6 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
       stateRef.current[idx+1] = p.lat;
       stateRef.current[idx+2] = (Math.random() - 0.5) * 0.002; 
       stateRef.current[idx+3] = (Math.random() - 0.5) * 0.002;
-      // ⚠️ 速度降為 0.25 倍
       stateRef.current[idx+4] = 0.04 + Math.random() * 0.08;
     }
   }, [places, agentCount]);
@@ -946,6 +940,7 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
     g.translate(0, 0.3, 0); 
     return g;
   }, []);
+  // Removed depthWrite=false here as requested
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending }), []);
 
   useFrame((state) => {
@@ -978,7 +973,6 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
 
       dummy.position.copy(curPos);
       
-      // ⚠️ 修正: 強制面向水平目標
       targetPos.copy(dummy.position);
       targetPos.x += nextPos.x - curPos.x;
       targetPos.z += nextPos.z - curPos.z;
@@ -991,7 +985,6 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
       
       dummy.rotateX(Math.sin(t * speed * 1) * 0.1); 
 
-      // ⚠️ 修正: 放大 5 倍
       dummy.scale.set(0.4 * zs, 0.4 * zs, 0.4 * zs);
       
       dummy.updateMatrix();
@@ -1005,8 +998,8 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
   if (places.length === 0) return null;
   return (
     <group>
-      <instancedMesh ref={headMeshRef} args={[headGeo, mat, agentCount]} depthWrite={false} />
-      <instancedMesh ref={bodyMeshRef} args={[bodyGeo, mat, agentCount]} depthWrite={false} />
+      <instancedMesh ref={headMeshRef} args={[headGeo, mat, agentCount]} />
+      <instancedMesh ref={bodyMeshRef} args={[bodyGeo, mat, agentCount]} />
     </group>
   );
 }
