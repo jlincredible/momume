@@ -43,23 +43,17 @@ const MIN_H = 0.4;
 const MAX_H = 3.5;
 const MAX_BUILDING_H = 5.5;
 const BASE_ZOOM = 14.5;
-const PHOTO_THRESHOLD = 3; // min photos to show gallery; else show CyberFunnel
+const PHOTO_THRESHOLD = 3;
 
 function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)); }
 function heightFromMinutes(min: number) { return clamp(min * PX_PER_MIN, MIN_H, MAX_H); }
 
-/**
- * Match BuildingStack's "top" Y.
- * When building is selected we merge segments by `friendId`, so the floor count becomes unique friends count.
- */
 function computeStackVisualTopY(blocks: PlaceAggregate['blocks'], isSelectedBuilding: boolean): number {
   if (blocks.length === 0) return 0;
   const gap = isSelectedBuilding ? 0.25 : 0.02;
-
   const rawTotalH = blocks.reduce((s, b) => s + heightFromMinutes(b.minutes), 0);
   const ratio = rawTotalH > MAX_BUILDING_H ? MAX_BUILDING_H / rawTotalH : 1;
-  const sumRenderH = rawTotalH * ratio; // = min(rawTotalH, MAX_BUILDING_H)
-
+  const sumRenderH = rawTotalH * ratio;
   const floorCount = isSelectedBuilding ? new Set(blocks.map((b) => b.friendId)).size : blocks.length;
   return sumRenderH + Math.max(0, floorCount - 1) * gap;
 }
@@ -78,20 +72,19 @@ function fmtTime(iso: string) { const d = getTZDate(iso), pad = (n:number)=>Stri
 function moodLabel(score: number) { if(score>=5)return'Excellent';if(score>=4)return'Good';if(score>=3)return'Ok';if(score>=2)return'Low';return'Bad'; }
 
 /* =========================
-   Data (更新了色票，對應圖片中飽和、乾淨的顏色)
+   Data
 ========================= */
 
 const FRIEND_COLORS: Record<string,string> = { 
-  f_alex:'#E04242',   // 紅色 ( Liam )
-  f_emily:'#4A89F3',  // 藍色 ( Sarah )
-  f_jordan:'#C4A674', // 金色/沙色 ( Chris )
-  f_casey:'#21B188'   // 翠綠色 ( Jade )
+  f_alex:'#E04242',   
+  f_emily:'#4A89F3',  
+  f_jordan:'#C4A674', 
+  f_casey:'#21B188'   
 };
 const FRIEND_NAMES:  Record<string,string> = { f_alex:'Liam', f_emily:'Sarah', f_jordan:'Chris', f_casey:'Jade' };
 
 const BASE_TIME = Date.now();
 const daysAgo = (days: number) => new Date(BASE_TIME - days * 86400000).toISOString();
-
 const THUMB_SIZE = 896;
 const picsum = (seed: string) => `https://picsum.photos/seed/${seed}/${THUMB_SIZE}/${THUMB_SIZE}`;
 const IMG_CAFE  = picsum('cafe1');
@@ -161,7 +154,7 @@ function aggregateSessions(sessions: Session[]): PlaceAggregate[] {
 }
 
 /* =========================
-   Materials (保留了透明塗層 MeshPhysicalMaterial 達到乾淨的反光感)
+   Materials
 ========================= */
 
 export type BlockVisualState = 'active' | 'filtered-dimmed' | 'muted';
@@ -175,49 +168,21 @@ function buildMaterial(hex: string, vs: BlockVisualState, density: number) {
   let mat: THREE.Material;
   
   if (vs === 'active') {
-    mat = new THREE.MeshPhysicalMaterial({
-      color: accent,
-      roughness: 0.15,
-      metalness: 0.05,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.1,
-      emissive: accent,
-      emissiveIntensity: 0.15 * density // 降低自發光，讓場景燈光打出漂亮的邊緣反光
-    });
+    mat = new THREE.MeshPhysicalMaterial({ color: accent, roughness: 0.15, metalness: 0.05, clearcoat: 0.8, clearcoatRoughness: 0.1, emissive: accent, emissiveIntensity: 0.15 * density });
   } else if (vs === 'filtered-dimmed') {
-    mat = new THREE.MeshPhysicalMaterial({
-      color: dark.clone().lerp(accent, 0.2),
-      roughness: 0.5,
-      metalness: 0.1,
-      clearcoat: 0.3,
-      emissive: accent,
-      emissiveIntensity: 0.05
-    });
+    mat = new THREE.MeshPhysicalMaterial({ color: dark.clone().lerp(accent, 0.2), roughness: 0.5, metalness: 0.1, clearcoat: 0.3, emissive: accent, emissiveIntensity: 0.05 });
   } else {
-    mat = new THREE.MeshStandardMaterial({
-      color: dark.clone().multiplyScalar(0.4),
-      roughness: 0.9,
-      metalness: 0,
-      emissive: new THREE.Color('#000'),
-      emissiveIntensity: 0
-    });
+    mat = new THREE.MeshStandardMaterial({ color: dark.clone().multiplyScalar(0.4), roughness: 0.9, metalness: 0, emissive: new THREE.Color('#000'), emissiveIntensity: 0 });
   }
-  
   MAT_CACHE.set(key, mat);
   return mat;
 }
 
-function ArchitecturalBlock({w=0.5,d=0.5,h,color,visualState,densityBoost,onPick}:{
-  w?:number;d?:number;h:number;color:string;visualState:BlockVisualState;densityBoost:number;onPick?:()=>void;
-}) {
+function ArchitecturalBlock({w=0.5,d=0.5,h,color,visualState,densityBoost,onPick}:{ w?:number;d?:number;h:number;color:string;visualState:BlockVisualState;densityBoost:number;onPick?:()=>void; }) {
   const mat = useMemo(()=>buildMaterial(color,visualState,densityBoost),[color,visualState,densityBoost]);
-  
-  // 還原了有稜有角的幾何體 (小圓角 radius=0.04)
   return (
     <group onPointerDown={e=>{e.stopPropagation();onPick?.();}}>
       <RoundedBox args={[w,h,d]} radius={0.04} smoothness={4} material={mat}/>
-      
-      {/* 還原了屋頂邊緣貼片结构 */}
       <mesh position={[0,h/2-0.015*Math.min(1,densityBoost),0]}>
         <boxGeometry args={[w+0.015,0.02,d+0.015]}/>
         <meshStandardMaterial color={visualState==='active'?'#03050a':'#020305'} roughness={0.8}/>
@@ -278,39 +243,22 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
   }),[]);
 
   const beamAngles = useMemo(()=>Array.from({length:6},(_,i)=>(i/6)*Math.PI*2),[]);
-
-  const particles = useMemo(()=>Array.from({length:18},(_,i)=>({
-    angle:(i/18)*Math.PI*2, speed:0.5+((i*7)%10)*0.08,
-    yBase: (i/18)*1.8, phase:(i*0.41)%( Math.PI*2), size:0.025+((i*3)%5)*0.008,
-  })),[]);
+  const particles = useMemo(()=>Array.from({length:18},(_,i)=>({ angle:(i/18)*Math.PI*2, speed:0.5+((i*7)%10)*0.08, yBase: (i/18)*1.8, phase:(i*0.41)%( Math.PI*2), size:0.025+((i*3)%5)*0.008 })),[]);
 
   useFrame(({clock})=>{
     const t = clock.elapsedTime;
     if (!groupRef.current) return;
     groupRef.current.position.y = Math.sin(t*0.9)*0.04;
     groupRef.current.rotation.y = t*0.1;
-
     ringRefs.current.forEach((r,i)=>{ if(!r)return; r.rotation.z=t*funnelData[i].speed*(i%2?-1:1); });
-
     partRefs.current.forEach((p,i)=>{
-      if(!p)return;
-      const pd=particles[i];
-      const ang=pd.angle+t*pd.speed;
-      const yLoop=((t*0.3+pd.yBase)%1.8);
-      const r=0.22+(yLoop/1.8)*0.65;
+      if(!p)return; const pd=particles[i]; const ang=pd.angle+t*pd.speed; const yLoop=((t*0.3+pd.yBase)%1.8); const r=0.22+(yLoop/1.8)*0.65;
       p.position.set(Math.cos(ang)*r*0.9, yLoop, Math.sin(ang)*r*0.9);
-      const pulse=0.7+Math.sin(t*2.2+pd.phase)*0.3;
-      p.scale.setScalar(pulse);
-      (p.material as THREE.MeshBasicMaterial).opacity=0.5*pulse;
+      const pulse=0.7+Math.sin(t*2.2+pd.phase)*0.3; p.scale.setScalar(pulse); (p.material as THREE.MeshBasicMaterial).opacity=0.5*pulse;
     });
-
     beamRefs.current.forEach((b,i)=>{
-      if(!b)return;
-      const pulse=0.85+Math.sin(t*1.6+i*1.05)*0.15;
-      b.scale.y=pulse;
-      (b.material as THREE.MeshBasicMaterial).opacity=0.15*pulse;
+      if(!b)return; const pulse=0.85+Math.sin(t*1.6+i*1.05)*0.15; b.scale.y=pulse; (b.material as THREE.MeshBasicMaterial).opacity=0.15*pulse;
     });
-
     if (coreRef.current) { const s=1+Math.sin(t*2.8)*0.1; coreRef.current.scale.setScalar(s); }
   });
 
@@ -322,46 +270,16 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
           <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} depthWrite={false}/>
         </mesh>
       ))}
-
-      <mesh rotation={[-Math.PI/2,0,0]}>
-        <circleGeometry args={[0.28,48]}/>
-        <meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-
-      <mesh position={[0,1.9,0]}>
-        <sphereGeometry args={[0.07,14,14]}/>
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-
+      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       {beamAngles.map((ang,i)=>{
         const br=0.5+((i%3)*0.12);
-        return (
-          <mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}>
-            <cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/>
-            <meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} depthWrite={false}/>
-          </mesh>
-        );
+        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>);
       })}
-
-      {particles.map((pd,i)=>(
-        <mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}>
-          <sphereGeometry args={[pd.size,5,5]}/>
-          <meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false}/>
-        </mesh>
-      ))}
-
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[0.13,20,20]}/>
-        <meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-
+      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>))}
+      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       <Html center transform={false} occlude={false} distanceFactor={10} position={[1.2,0.9,0]}>
-        <div style={{
-          pointerEvents:'none', color:'white', fontFamily:'Inter,system-ui,sans-serif',
-          width:128, padding:'10px 13px', borderRadius:12,
-          background:'rgba(8,14,24,0.75)', border:`1px solid ${color}44`,
-          backdropFilter:'blur(8px)', boxShadow:`0 0 20px ${color}22`,
-        }}>
+        <div style={{ pointerEvents:'none', color:'white', fontFamily:'Inter,system-ui,sans-serif', width:128, padding:'10px 13px', borderRadius:12, background:'rgba(8,14,24,0.75)', border:`1px solid ${color}44`, backdropFilter:'blur(8px)', boxShadow:`0 0 20px ${color}22` }}>
           <div style={{fontSize:9,letterSpacing:'0.15em',opacity:0.55,marginBottom:3}}>PLACE ENERGY</div>
           <div style={{fontSize:22,fontWeight:800,lineHeight:1}}>{Math.round(totalMinutes)}m</div>
           <div style={{fontSize:11,opacity:0.65,marginTop:3}}>{blockCount} sessions</div>
@@ -395,12 +313,12 @@ function MemoryMetaChip({color,title,subtitle,active}:{color:string;title:string
    MemoryCard
 ========================= */
 
-function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,onCancelActive,onSnapToCenter,onSelectSession,dragRef,ringRadius}:{
+function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,onCancelActive,onSnapToCenter,onSelectSession,dragRef,ringRadius,isMobile}:{
   m:any;index:number;total:number;scrollRef:React.MutableRefObject<number>;isActive:boolean;
   expandedMode:boolean;
   onMakeActive:()=>void;onCancelActive:()=>void;onSnapToCenter:(i:number)=>void;
-  onSelectSession:(id:string)=>void;dragRef:React.MutableRefObject<{dragged:boolean}>;
-  ringRadius:number;
+  onSelectSession:(id:string, fromPhoto?:boolean)=>void;dragRef:React.MutableRefObject<{dragged:boolean}>;
+  ringRadius:number;isMobile:boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const matRef   = useRef<any>(null);
@@ -523,6 +441,9 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
     }
   });
 
+  // 手機版放下面，電腦版放左邊
+  const htmlPos = isMobile ? [0, -1.5, 0] : [-1.6, 0.2, 0];
+
   return (
     <group ref={groupRef}
       onPointerDown={e=>{
@@ -533,7 +454,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
           longPressTriggeredRef.current=true;
           onSnapToCenter(index);
           onMakeActive();
-          onSelectSession(m.sessionId);
+          onSelectSession(m.sessionId, true); // 標記來自照片點擊
         },320);
       }}
       onPointerUp={e=>{
@@ -543,26 +464,19 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         if(isActive){onCancelActive();return;}
         let off=index-scrollRef.current;
         const h=total/2;if(off>h)off-=total;if(off<-h)off+=total;
-        if(Math.abs(off)<0.4)onSelectSession(m.sessionId);else onSnapToCenter(index);
+        if(Math.abs(off)<0.4) {
+          onMakeActive();
+          onSelectSession(m.sessionId, true); // 標記來自照片點擊
+        } else onSnapToCenter(index);
       }}
       onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);longPressTriggeredRef.current=false;setHovered(false);document.body.style.cursor='';}}
       onPointerOver={()=>{setHovered(true);document.body.style.cursor='pointer';}}
     >
-      <mesh position={[0,0,-0.02]}>
-        <planeGeometry args={[1.5,1.5]}/>
-        <meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-      <mesh ref={frameMeshRef} position={[0,0,-0.045]}>
-        <planeGeometry args={[1.55,1.55]}/>
-        <meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-      <mesh position={[0,0,-0.04]}>
-        <planeGeometry args={[1.55,1.55]}/>
-        <meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} wireframe/>
-      </mesh>
+      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} wireframe/></mesh>
       {tex?(
-        <mesh>
-          <planeGeometry args={[1.35,1.35]}/>
+        <mesh><planeGeometry args={[1.35,1.35]}/>
           {/* @ts-ignore */}
           <holographicMaterial ref={matRef} uTex={tex} uColorB={new THREE.Color(m.color)} uClarity={1} transparent depthWrite={true}/>
         </mesh>
@@ -570,47 +484,37 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         <mesh><planeGeometry args={[1.35,1.35]}/><meshBasicMaterial color="#222" wireframe/></mesh>
       )}
       {!expandedMode && (
-        <MemoryMetaChip
-          color={m.color}
-          title={m.hangoutType??'Memory'}
-          subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`}
-          active={isActive}
-        />
+        <MemoryMetaChip color={m.color} title={m.hangoutType??'Memory'} subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`} active={isActive} />
       )}
 
       {isActive && (
-        <Html
-          center
-          transform={false}
-          occlude={false}
-          distanceFactor={10}
-          position={[0,-1.15,0]}
-        >
+        <Html center transform={false} occlude={false} distanceFactor={10} position={htmlPos as [number,number,number]}>
           <div
             style={{
-              pointerEvents: 'none',
-              width: 300,
-              padding: '12px 14px',
-              borderRadius: 16,
+              pointerEvents: 'auto', // 允許在面板上互動
+              width: 260,
+              padding: '16px 20px',
+              borderRadius: 20,
               color: 'white',
               fontFamily: 'system-ui, sans-serif',
-              background: 'rgba(18,24,36,0.76)',
-              border: `1px solid ${m.color}55`,
-              backdropFilter: 'blur(10px)',
-              boxShadow: `0 18px 50px ${m.color}22, 0 12px 32px rgba(0,0,0,0.5)`,
+              background: 'rgba(22, 28, 40, 0.85)',
+              border: `1px solid ${m.color}66`,
+              backdropFilter: 'blur(20px)',
+              boxShadow: `0 18px 50px ${m.color}22, 0 12px 32px rgba(0,0,0,0.6)`,
               opacity: panelOpen ? 1 : 0,
-              transform: panelOpen ? 'translate(-50%, -50%) translateY(0px)' : 'translate(-50%, -50%) translateY(14px)',
+              transform: panelOpen ? 'translateY(0px) scale(1)' : 'translateY(10px) scale(0.95)',
               transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease',
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: '0.02em' }}>
-              {m.hangoutType ?? 'Memory'}
+            <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{m.hangoutType ?? 'Memory'}</span>
+              <div style={{width: 12, height: 12, borderRadius: '50%', background: m.color, boxShadow: `0 0 10px ${m.color}`}} />
             </div>
-            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 6 }}>{m.startedAt ? fmtTime(m.startedAt) : ''}</div>
-            <div style={{ fontSize: 11, opacity: 0.9, marginTop: 8 }}>
-              {m.placeId} / {Math.round(m.minutes ?? 0)}m / {FRIEND_NAMES[m.friendId] ?? m.friendId}
+            <div style={{ fontSize: 13, opacity: 0.75, marginTop: 8 }}>{m.startedAt ? fmtTime(m.startedAt) : ''}</div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              {m.placeId} / <span style={{fontWeight: 'bold'}}>{Math.round(m.minutes ?? 0)}m</span> / {FRIEND_NAMES[m.friendId] ?? m.friendId}
             </div>
-            <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.25, opacity: 0.95 }}>
+            <div style={{ marginTop: 14, fontSize: 15, lineHeight: 1.4, opacity: 0.95 }}>
               {m.notes || (Array.isArray(m.tags) ? m.tags[0] : null) || moodLabel(m.moodScore ?? 3)}
             </div>
           </div>
@@ -624,28 +528,21 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
    MemoriesAboveBuilding
 ========================= */
 
-function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSelectSession,isMobile,mapRef}:{
+function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSelectSession,isMobile,mapRef,activePhotoId,setActivePhotoId}:{
   blocks: PlaceAggregate['blocks'];
   placeId: string;
   stackTopY: number; 
   selectedSessionId: string | null;
-  onSelectSession:(sessionId:string)=>void;
+  onSelectSession:(sessionId:string, fromPhoto?:boolean)=>void;
   isMobile:boolean;
   mapRef:React.MutableRefObject<mapboxgl.Map|null>;
+  activePhotoId: string | null;
+  setActivePhotoId: React.Dispatch<React.SetStateAction<string|null>>;
 }) {
   const moments = useMemo(()=>
     blocks.flatMap((b)=>b.moments.map((m)=>({
-      ...m,
-      sessionId: b.sessionId,
-      placeId,
-      friendId: b.friendId,
-      minutes: b.minutes,
-      color: b.color,
-      startedAt: b.startedAt,
-      hangoutType: b.hangoutType,
-      tags: b.tags,
-      moodScore: b.moodScore,
-      notes: b.notes,
+      ...m, sessionId: b.sessionId, placeId, friendId: b.friendId, minutes: b.minutes,
+      color: b.color, startedAt: b.startedAt, hangoutType: b.hangoutType, tags: b.tags, moodScore: b.moodScore, notes: b.notes,
     }))),
   [blocks, placeId]);
 
@@ -663,7 +560,6 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
   const targetRef = useRef(0);
   const groupRef  = useRef<THREE.Group>(null);
   const dragRef   = useRef({isDragging:false, startX:0, startScroll:0, dragged:false});
-  const [activeId, setActiveId] = useState<string|null>(null);
   const ringRadius = useMemo(() => clamp(1.55 + moments.length * 0.028, 1.62, 2.35), [moments.length]);
 
   const snapToCenter = useCallback((idx:number)=>{
@@ -678,7 +574,7 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
 
   useFrame((state,delta)=>{
     if(!groupRef.current)return;
-    if(!dragRef.current.isDragging&&!activeId) targetRef.current+=0.25*delta;
+    if(!dragRef.current.isDragging&&!activePhotoId) targetRef.current+=0.25*delta;
     scrollRef.current=THREE.MathUtils.lerp(scrollRef.current,targetRef.current,8.5*delta);
     groupRef.current.position.y=THREE.MathUtils.lerp(
       groupRef.current.position.y,
@@ -691,7 +587,7 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
     e.stopPropagation();
     if(mapRef.current){mapRef.current.dragPan.disable();mapRef.current.scrollZoom.disable();}
     dragRef.current={isDragging:true,startX:e.clientX,startScroll:targetRef.current,dragged:false};
-    setActiveId(null);
+    setActivePhotoId(null);
   };
   const onWallMove=(e:any)=>{
     if(!dragRef.current.isDragging)return;e.stopPropagation();
@@ -707,10 +603,10 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
   };
 
   useEffect(()=>{
-    if(!selectedSessionId){ setActiveId(null); return; }
+    if(!selectedSessionId){ setActivePhotoId(null); return; }
     const hit = moments.find(m=>m.sessionId===selectedSessionId);
-    if(hit) setActiveId(hit.id);
-  },[selectedSessionId, moments]);
+    if(hit) setActivePhotoId(hit.id);
+  },[selectedSessionId, moments, setActivePhotoId]);
 
   if (moments.length < PHOTO_THRESHOLD) {
     return (
@@ -722,27 +618,19 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
 
   return (
     <group ref={groupRef} position={[0, galleryY, 0]}>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}>
-        <ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/>
-        <meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}>
-        <ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/>
-        <meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} depthWrite={false}/>
-      </mesh>
-
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
       {moments.map((m,i)=>(
         <MemoryCard key={m.id} m={m} index={i} total={moments.length} ringRadius={ringRadius}
-          scrollRef={scrollRef} dragRef={dragRef}
-          isActive={activeId===m.id}
-          expandedMode={activeId!==null}
-          onMakeActive={()=>setActiveId(m.id)}
-          onCancelActive={()=>setActiveId(null)}
+          scrollRef={scrollRef} dragRef={dragRef} isMobile={isMobile}
+          isActive={activePhotoId===m.id}
+          expandedMode={activePhotoId!==null}
+          onMakeActive={()=>setActivePhotoId(m.id)}
+          onCancelActive={()=>setActivePhotoId(null)}
           onSnapToCenter={snapToCenter}
           onSelectSession={onSelectSession}
         />
       ))}
-
       <mesh position={[0,0,0]} onPointerDown={onWallDown} onPointerMove={onWallMove} onPointerUp={onWallUp} onPointerOut={onWallUp} onPointerCancel={onWallUp}>
         <planeGeometry args={[10,4]}/>
         <meshBasicMaterial transparent opacity={0} depthWrite={false}/>
@@ -772,41 +660,22 @@ function BuildingStack({blocks,buildingBaseState,selectedSessionId,isSelectedBui
       for(const b of blocks){
         const cur = byFriend.get(b.friendId);
         if(!cur){
-          byFriend.set(b.friendId,{
-            friendId: b.friendId,
-            color: b.color,
-            rawH: heightFromMinutes(b.minutes),
-            primarySessionId: b.sessionId,
-            primaryStartedAt: b.startedAt,
-          });
+          byFriend.set(b.friendId,{ friendId: b.friendId, color: b.color, rawH: heightFromMinutes(b.minutes), primarySessionId: b.sessionId, primaryStartedAt: b.startedAt });
           continue;
         }
         cur.rawH += heightFromMinutes(b.minutes);
         if(new Date(b.startedAt).getTime() > new Date(cur.primaryStartedAt).getTime()){
-          cur.primarySessionId = b.sessionId;
-          cur.primaryStartedAt = b.startedAt;
+          cur.primarySessionId = b.sessionId; cur.primaryStartedAt = b.startedAt;
         }
       }
-
       const segments = Array.from(byFriend.values()).sort((a,b)=>b.rawH-a.rawH);
       let y=0;
       const mapped = segments.map(seg=>{
-        const h = seg.rawH * ratio;
-        const cy = y + h/2;
-        y += h;
-        return {
-          sessionId: seg.primarySessionId,
-          friendId: seg.friendId,
-          color: seg.color,
-          startedAt: seg.primaryStartedAt,
-          renderH: h,
-          currentY: cy,
-        };
+        const h = seg.rawH * ratio; const cy = y + h/2; y += h;
+        return { sessionId: seg.primarySessionId, friendId: seg.friendId, color: seg.color, startedAt: seg.primaryStartedAt, renderH: h, currentY: cy };
       });
-
       return {compressedBlocks: mapped as any, densityBoost: density};
     }
-
     let y=0;
     const mapped=blocks.map(b=>{const h=heightFromMinutes(b.minutes)*ratio;const cy=y+h/2;y+=h;return{...b,renderH:h,currentY:cy};});
     return {compressedBlocks:mapped,densityBoost:density};
@@ -864,114 +733,108 @@ function PulseRing({isActive,isHover,muted,onPick}:{isActive:boolean;isHover:boo
 }
 
 /* =========================
-   Trajectory
+   Trajectory & Environment (省略未更動細節以保持整潔)
 ========================= */
 
-function SingleTrajectoryLine({sequence,places,mapRef,mapReady,timeFilter,friendFilter}:{
-  sequence:{lng:number;lat:number;placeId:string;friendId:string}[];
-  places:PlaceAggregate[];mapRef:React.MutableRefObject<mapboxgl.Map|null>;mapReady:boolean;
-  timeFilter:TimeFilter;friendFilter:string;
-}) {
-  const lineRef = useRef<any>(null);
-  const {camera,size} = useThree();
-  const startRef = useRef<number|null>(null);
+function SingleTrajectoryLine({sequence,places,mapRef,mapReady,timeFilter,friendFilter}:{ sequence:{lng:number;lat:number;placeId:string;friendId:string}[]; places:PlaceAggregate[];mapRef:React.MutableRefObject<mapboxgl.Map|null>;mapReady:boolean; timeFilter:TimeFilter;friendFilter:string; }) {
+  const lineRef = useRef<any>(null); const {camera,size} = useThree(); const startRef = useRef<number|null>(null);
   useEffect(()=>{startRef.current=null;},[sequence]);
-
-  const vec=useMemo(()=>new THREE.Vector3(),[]);
-  const w1=useMemo(()=>new THREE.Vector3(),[]);
-  const w2=useMemo(()=>new THREE.Vector3(),[]);
-  const mid=useMemo(()=>new THREE.Vector3(),[]);
-  const tc=useMemo(()=>new THREE.Color(),[]);
-  const ca=useMemo(()=>new THREE.Color(),[]);
-  const cb=useMemo(()=>new THREE.Color(),[]);
-
+  const vec=useMemo(()=>new THREE.Vector3(),[]); const w1=useMemo(()=>new THREE.Vector3(),[]); const w2=useMemo(()=>new THREE.Vector3(),[]); const mid=useMemo(()=>new THREE.Vector3(),[]); const tc=useMemo(()=>new THREE.Color(),[]); const ca=useMemo(()=>new THREE.Color(),[]); const cb=useMemo(()=>new THREE.Color(),[]);
   const getBH = useCallback((placeId:string)=>{
-    const p=places.find(x=>x.placeId===placeId);
-    if(!p)return 0;
-    const vb=p.blocks.filter(b=>{
-      if(b.tags.includes('sim'))return false;
-      const tm=timeFilter==='all'||(timeFilter==='year'&&isThisYearISO(b.startedAt))||(timeFilter==='month'&&isThisMonthISO(b.startedAt))||(timeFilter==='today'&&isTodayISO(b.startedAt));
-      return tm&&(friendFilter==='all'||b.friendId===friendFilter);
-    });
+    const p=places.find(x=>x.placeId===placeId); if(!p)return 0;
+    const vb=p.blocks.filter(b=>{ if(b.tags.includes('sim'))return false; const tm=timeFilter==='all'||(timeFilter==='year'&&isThisYearISO(b.startedAt))||(timeFilter==='month'&&isThisMonthISO(b.startedAt))||(timeFilter==='today'&&isTodayISO(b.startedAt)); return tm&&(friendFilter==='all'||b.friendId===friendFilter); });
     return Math.min(vb.reduce((s,b)=>s+heightFromMinutes(b.minutes),0),MAX_BUILDING_H);
   },[places,timeFilter,friendFilter]);
-
   useFrame(({clock})=>{
     if(!mapReady||!mapRef.current||sequence.length<2||!lineRef.current||size.width===0)return;
     if(startRef.current===null)startRef.current=clock.getElapsedTime();
-    const lt=clock.getElapsedTime()-startRef.current;
-    const map=mapRef.current;
-    const zs=Math.pow(2,map.getZoom()-BASE_ZOOM);
-    const pos:number[]=[];
-    const c:number[]=[];
-    let nan=false;
-
-    const getW=(lng:number,lat:number,pid:string,t:THREE.Vector3)=>{
-      const pt=map.project([lng,lat]);
-      vec.set((pt.x/size.width)*2-1,-(pt.y/size.height)*2+1,0.5);
-      vec.unproject(camera);vec.sub(camera.position).normalize();
-      const d=-camera.position.y/vec.y;
-      t.copy(camera.position).add(vec.multiplyScalar(d));
-      t.y+=(getBH(pid)+0.15)*zs;
-      if(Number.isNaN(t.x)||Number.isNaN(t.y)||Number.isNaN(t.z))nan=true;
-    };
-
-    const segs=sequence.length-1,pps=32,ppc=pps+1,total=segs*ppc;
-    const travel=segs*1.6,pause=1.8,cyc=travel+pause;
-    const head=clamp((lt%cyc)/travel,0,1)*total;
-    const TAIL=28,HB=5.0,TF=2.2;
-
+    const lt=clock.getElapsedTime()-startRef.current; const map=mapRef.current; const zs=Math.pow(2,map.getZoom()-BASE_ZOOM); const pos:number[]=[]; const c:number[]=[]; let nan=false;
+    const getW=(lng:number,lat:number,pid:string,t:THREE.Vector3)=>{ const pt=map.project([lng,lat]); vec.set((pt.x/size.width)*2-1,-(pt.y/size.height)*2+1,0.5); vec.unproject(camera);vec.sub(camera.position).normalize(); const d=-camera.position.y/vec.y; t.copy(camera.position).add(vec.multiplyScalar(d)); t.y+=(getBH(pid)+0.15)*zs; if(Number.isNaN(t.x)||Number.isNaN(t.y)||Number.isNaN(t.z))nan=true; };
+    const segs=sequence.length-1,pps=32,ppc=pps+1,total=segs*ppc; const travel=segs*1.6,pause=1.8,cyc=travel+pause; const head=clamp((lt%cyc)/travel,0,1)*total; const TAIL=28,HB=5.0,TF=2.2;
     for(let i=0;i<segs;i++){
-      const sA=sequence[i],sB=sequence[i+1];
-      getW(sA.lng,sA.lat,sA.placeId,w1);getW(sB.lng,sB.lat,sB.placeId,w2);
-      ca.set(FRIEND_COLORS[sA.friendId]??'#fff');cb.set(FRIEND_COLORS[sB.friendId]??'#fff');
-      if(nan)return;
-      const dist=w1.distanceTo(w2);
-      mid.copy(w1).lerp(w2,0.5);mid.y+=Math.max(1.5*zs,dist*0.25);
-      const curve=new THREE.QuadraticBezierCurve3(w1,mid,w2);
-      const pts=curve.getPoints(pps);
+      const sA=sequence[i],sB=sequence[i+1]; getW(sA.lng,sA.lat,sA.placeId,w1);getW(sB.lng,sB.lat,sB.placeId,w2); ca.set(FRIEND_COLORS[sA.friendId]??'#fff');cb.set(FRIEND_COLORS[sB.friendId]??'#fff'); if(nan)return;
+      const dist=w1.distanceTo(w2); mid.copy(w1).lerp(w2,0.5);mid.y+=Math.max(1.5*zs,dist*0.25); const curve=new THREE.QuadraticBezierCurve3(w1,mid,w2); const pts=curve.getPoints(pps);
       for(let j=0;j<pts.length;j++){
-        const pi=i*ppc+j;
-        pos.push(pts[j].x,pts[j].y,pts[j].z);
-        const dh=head-pi;
-        let intensity=0.08;
+        const pi=i*ppc+j; pos.push(pts[j].x,pts[j].y,pts[j].z); const dh=head-pi; let intensity=0.08;
         if(dh>=0&&dh<=TAIL){const tt=1-dh/TAIL;intensity=Math.pow(tt,TF)*HB;if(dh<3)intensity+=(1-dh/3)*HB*0.6;}
-        tc.copy(ca).lerp(cb,j/pps).multiplyScalar(intensity);
-        c.push(tc.r,tc.g,tc.b);
+        tc.copy(ca).lerp(cb,j/pps).multiplyScalar(intensity); c.push(tc.r,tc.g,tc.b);
       }
     }
-
-    if(!nan&&pos.length>0){
-      lineRef.current.geometry.setPositions(pos);
-      lineRef.current.geometry.setColors(c);
-      if(lineRef.current.material){lineRef.current.material.vertexColors=true;lineRef.current.material.needsUpdate=true;}
-    }
+    if(!nan&&pos.length>0){ lineRef.current.geometry.setPositions(pos); lineRef.current.geometry.setColors(c); if(lineRef.current.material){lineRef.current.material.vertexColors=true;lineRef.current.material.needsUpdate=true;} }
   });
-
   return <Line ref={lineRef} points={[[0,0,0],[0,1,0]]} vertexColors={[[1,1,1],[1,1,1]]} color="#fff" lineWidth={4.2} transparent opacity={0.85} depthTest={false}/>;
 }
 
-function TrajectoryManager({places,sessions,timeFilter,friendFilter,selectedPlaceId,mapRef,mapReady}:{
-  places:PlaceAggregate[];sessions:Session[];timeFilter:TimeFilter;friendFilter:string|'all';
-  selectedPlaceId:string|null;mapRef:React.MutableRefObject<mapboxgl.Map|null>;mapReady:boolean;
-}) {
+function TrajectoryManager({places,sessions,timeFilter,friendFilter,selectedPlaceId,mapRef,mapReady}:{ places:PlaceAggregate[];sessions:Session[];timeFilter:TimeFilter;friendFilter:string|'all'; selectedPlaceId:string|null;mapRef:React.MutableRefObject<mapboxgl.Map|null>;mapReady:boolean; }) {
   if(selectedPlaceId!==null||timeFilter==='all')return null;
-  const valid=useMemo(()=>sessions.filter(s=>{
-    if(s.tags.includes('sim'))return false;
-    const tm=timeFilter==='year'?isThisYearISO(s.startedAt):timeFilter==='month'?isThisMonthISO(s.startedAt):timeFilter==='today'?isTodayISO(s.startedAt):true;
-    return tm&&(friendFilter==='all'||s.friendId===friendFilter);
-  }),[sessions,timeFilter,friendFilter]);
-
-  const seq=useMemo(()=>{
-    const sorted=[...valid].sort((a,b)=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime());
-    const out:{lng:number;lat:number;placeId:string;friendId:string}[]=[];
-    let last=null;
-    for(const s of sorted)if(s.placeId!==last){out.push({lng:s.lng,lat:s.lat,placeId:s.placeId,friendId:s.friendId});last=s.placeId;}
-    return out;
-  },[valid]);
-
+  const valid=useMemo(()=>sessions.filter(s=>{ if(s.tags.includes('sim'))return false; const tm=timeFilter==='year'?isThisYearISO(s.startedAt):timeFilter==='month'?isThisMonthISO(s.startedAt):timeFilter==='today'?isTodayISO(s.startedAt):true; return tm&&(friendFilter==='all'||s.friendId===friendFilter); }),[sessions,timeFilter,friendFilter]);
+  const seq=useMemo(()=>{ const sorted=[...valid].sort((a,b)=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime()); const out:{lng:number;lat:number;placeId:string;friendId:string}[]=[]; let last=null; for(const s of sorted)if(s.placeId!==last){out.push({lng:s.lng,lat:s.lat,placeId:s.placeId,friendId:s.friendId});last=s.placeId;} return out; },[valid]);
   if(seq.length<2)return null;
   return <group><SingleTrajectoryLine key={`${timeFilter}-${friendFilter}`} sequence={seq} places={places} mapRef={mapRef} mapReady={mapReady} timeFilter={timeFilter} friendFilter={friendFilter}/></group>;
+}
+
+function HolographicEnvironment() {
+  const groupRef = useRef<THREE.Group>(null);
+  const cloudGeo = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
+  const birdGeo = useMemo(() => new THREE.BoxGeometry(0.2, 0.02, 0.05), []);
+  useFrame((state, delta) => {
+    if (!groupRef.current) return; const t = state.clock.elapsedTime; groupRef.current.position.y = Math.sin(t * 0.5) * 0.2;
+    groupRef.current.children.forEach((child, i) => {
+      if (child.userData.type === 'cloud') { child.position.x += child.userData.speed * delta; if (child.position.x > 20) child.position.x = -20; }
+      else if (child.userData.type === 'bird') { child.position.x = child.userData.origin[0] + Math.sin(t * child.userData.speed) * 8; child.position.z = child.userData.origin[2] + Math.cos(t * child.userData.speed) * 4; child.rotation.y = -(t * child.userData.speed) + Math.PI; child.position.y = child.userData.origin[1] + Math.sin(t * 2 + i) * 0.2; }
+    });
+  });
+  return (
+    <group ref={groupRef} position={[0, 6, 0]}>
+      {Array.from({ length: 4 }).map((_, i) => (<group key={`cloud-${i}`} position={[-15 + i * 8, 2 + Math.random() * 2, -5 + Math.random() * 10]} userData={{ type: 'cloud', speed: 0.2 + Math.random() * 0.3 }} scale={1 + Math.random()}><mesh geometry={cloudGeo} position={[0, 0, 0]}><meshBasicMaterial color="#2DD4BF" transparent opacity={0.03} blending={THREE.AdditiveBlending}/></mesh><mesh geometry={cloudGeo} position={[0.8, 0, 0]} scale={0.8}><meshBasicMaterial color="#2DD4BF" transparent opacity={0.03} blending={THREE.AdditiveBlending}/></mesh></group>))}
+      {Array.from({ length: 5 }).map((_, i) => (<group key={`bird-${i}`} userData={{ type: 'bird', speed: 0.1 + Math.random() * 0.1, origin: [0, Math.random(), 0] }}><mesh geometry={birdGeo} position={[0.1, 0, 0]} rotation={[0, Math.PI / 6, 0]}><meshBasicMaterial color="#7ef9ff" transparent opacity={0.4} blending={THREE.AdditiveBlending} /></mesh><mesh geometry={birdGeo} position={[-0.1, 0, 0]} rotation={[0, -Math.PI / 6, 0]}><meshBasicMaterial color="#7ef9ff" transparent opacity={0.4} blending={THREE.AdditiveBlending} /></mesh></group>))}
+    </group>
+  );
+}
+
+function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggregate[], mapRef: React.MutableRefObject<mapboxgl.Map|null>, mapReady: boolean }) {
+  const carCount = Math.min(places.length * 2, 30); const meshRef = useRef<THREE.InstancedMesh>(null); const stateRef = useRef<Float32Array>(new Float32Array(0)); const dummy = useMemo(() => new THREE.Object3D(), []); const vec = useMemo(() => new THREE.Vector3(), []); const { camera, size } = useThree();
+  useEffect(() => {
+    if (places.length < 2) return; stateRef.current = new Float32Array(carCount * 7); 
+    for (let i = 0; i < carCount; i++) { const p1 = places[Math.floor(Math.random() * places.length)]; const p2 = places[Math.floor(Math.random() * places.length)]; const idx = i * 7; stateRef.current[idx] = p1.lng; stateRef.current[idx+1] = p1.lat; stateRef.current[idx+2] = p2.lng; stateRef.current[idx+3] = p2.lat; stateRef.current[idx+4] = Math.random(); stateRef.current[idx+5] = 0.001 + Math.random() * 0.002; }
+  }, [places, carCount]);
+  useFrame(() => {
+    if (!mapReady || !mapRef.current || size.width === 0 || !meshRef.current || stateRef.current.length === 0) return;
+    const map = mapRef.current; const zs = Math.pow(2, map.getZoom() - BASE_ZOOM);
+    for (let i = 0; i < carCount; i++) {
+      const idx = i * 7; let progress = stateRef.current[idx+4] + stateRef.current[idx+5];
+      if (progress >= 1) { progress = 0; stateRef.current[idx] = stateRef.current[idx+2]; stateRef.current[idx+1] = stateRef.current[idx+3]; const nextP = places[Math.floor(Math.random() * places.length)]; stateRef.current[idx+2] = nextP.lng; stateRef.current[idx+3] = nextP.lat; }
+      stateRef.current[idx+4] = progress;
+      const cLng = THREE.MathUtils.lerp(stateRef.current[idx], stateRef.current[idx+2], progress); const cLat = THREE.MathUtils.lerp(stateRef.current[idx+1], stateRef.current[idx+3], progress);
+      const pt = map.project([cLng, cLat]); vec.set((pt.x / size.width) * 2 - 1, -(pt.y / size.height) * 2 + 1, 0.5); vec.unproject(camera); vec.sub(camera.position).normalize(); const d = -camera.position.y / vec.y;
+      dummy.position.copy(camera.position).add(vec.multiplyScalar(d)); dummy.position.y += 0.05 * zs; 
+      const dx = stateRef.current[idx+2] - stateRef.current[idx]; const dy = stateRef.current[idx+3] - stateRef.current[idx+1]; dummy.rotation.set(0, -Math.atan2(dy, dx), 0); dummy.scale.set(0.15 * zs, 0.04 * zs, 0.06 * zs); dummy.updateMatrix(); meshRef.current.setMatrixAt(i, dummy.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+  const carGeo = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []); const carMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }), []);
+  if (places.length < 2) return null; return <instancedMesh ref={meshRef} args={[carGeo, carMat, carCount]} depthWrite={false} />;
+}
+
+function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate[], mapRef: React.MutableRefObject<mapboxgl.Map|null>, mapReady: boolean }) {
+  const agentCount = Math.min(places.length * 5, 100); const meshRef = useRef<THREE.InstancedMesh>(null); const stateRef = useRef<Float32Array>(new Float32Array(0)); const dummy = useMemo(() => new THREE.Object3D(), []); const vec = useMemo(() => new THREE.Vector3(), []); const { camera, size } = useThree();
+  useEffect(() => {
+    if (places.length === 0) return; stateRef.current = new Float32Array(agentCount * 5); 
+    for (let i = 0; i < agentCount; i++) { const p = places[Math.floor(Math.random() * places.length)]; const idx = i * 5; stateRef.current[idx] = p.lng; stateRef.current[idx+1] = p.lat; stateRef.current[idx+2] = (Math.random() - 0.5) * 0.002; stateRef.current[idx+3] = (Math.random() - 0.5) * 0.002; stateRef.current[idx+4] = 0.15 + Math.random() * 0.3; }
+  }, [places, agentCount]);
+  useFrame((state) => {
+    if (!mapReady || !mapRef.current || size.width === 0 || !meshRef.current || stateRef.current.length === 0) return;
+    const map = mapRef.current; const zs = Math.pow(2, map.getZoom() - BASE_ZOOM); const t = state.clock.elapsedTime;
+    for (let i = 0; i < agentCount; i++) {
+      const idx = i * 5; const baseLng = stateRef.current[idx]; const baseLat = stateRef.current[idx+1]; const speed = stateRef.current[idx+4]; 
+      const curLng = baseLng + stateRef.current[idx+2] * Math.sin(t * speed); const curLat = baseLat + stateRef.current[idx+3] * Math.cos(t * speed);
+      const pt = map.project([curLng, curLat]); vec.set((pt.x / size.width) * 2 - 1, -(pt.y / size.height) * 2 + 1, 0.5); vec.unproject(camera); vec.sub(camera.position).normalize(); const d = -camera.position.y / vec.y;
+      dummy.position.copy(camera.position).add(vec.multiplyScalar(d)); dummy.position.y += Math.abs(Math.sin(t * speed * 2)) * 0.02 * zs; dummy.scale.set(0.04 * zs, 0.1 * zs, 0.04 * zs); dummy.updateMatrix(); meshRef.current.setMatrixAt(i, dummy.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+  const geo = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []); const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending }), []);
+  if (places.length === 0) return null; return <instancedMesh ref={meshRef} args={[geo, mat, agentCount]} depthWrite={false} />;
 }
 
 /* =========================
@@ -979,8 +842,7 @@ function TrajectoryManager({places,sessions,timeFilter,friendFilter,selectedPlac
 ========================= */
 
 function getPlaceSummary(place:PlaceAggregate) {
-  const totalMinutes=place.blocks.reduce((s,b)=>s+b.minutes,0);
-  const totalOops=place.blocks.reduce((s,b)=>s+b.oops,0);
+  const totalMinutes=place.blocks.reduce((s,b)=>s+b.minutes,0); const totalOops=place.blocks.reduce((s,b)=>s+b.oops,0);
   const byF=new Map<string,{minutes:number;oops:number}>();
   for(const b of place.blocks){const c=byF.get(b.friendId)??{minutes:0,oops:0};c.minutes+=b.minutes;c.oops+=b.oops;byF.set(b.friendId,c);}
   const topFriends=Array.from(byF.entries()).map(([friendId,v])=>({friendId,name:FRIEND_NAMES[friendId]??friendId,minutes:v.minutes,oops:v.oops,color:FRIEND_COLORS[friendId]??'#888'})).sort((a,b)=>b.minutes-a.minutes);
@@ -992,7 +854,7 @@ function getPlaceSummary(place:PlaceAggregate) {
 ========================= */
 
 function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSessionId,hoverPlaceId,timeFilter,friendFilter,
-  setSelectedPlaceId,setSelectedSessionId,setHoverPlaceId,router,isMobile,onFocusPlace,setMapInteractivity}:{
+  setSelectedPlaceId,setSelectedSessionId,setHoverPlaceId,router,isMobile,onFocusPlace,onFocusPhoto,setMapInteractivity,activePhotoId,setActivePhotoId}:{
   places:PlaceAggregate[];mapRef:React.MutableRefObject<mapboxgl.Map|null>;mapReady:boolean;
   selectedPlaceId:string|null;selectedSessionId:string|null;hoverPlaceId:string|null;
   timeFilter:TimeFilter;friendFilter:string|'all';
@@ -1001,27 +863,22 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
   setHoverPlaceId:React.Dispatch<React.SetStateAction<string|null>>;
   router:ReturnType<typeof useRouter>;isMobile:boolean;
   onFocusPlace:(place:PlaceAggregate,isExpand?:boolean)=>void;
+  onFocusPhoto:(place:PlaceAggregate)=>void;
   setMapInteractivity:(enable:boolean)=>void;
+  activePhotoId:string|null;
+  setActivePhotoId:React.Dispatch<React.SetStateAction<string|null>>;
 }) {
-  const outerRefs = useRef<Record<string,THREE.Group|null>>({});
-  const innerRefs = useRef<Record<string,THREE.Group|null>>({});
-  const {camera,size} = useThree();
-  const vec=useMemo(()=>new THREE.Vector3(),[]);
-  const pos=useMemo(()=>new THREE.Vector3(),[]);
+  const outerRefs = useRef<Record<string,THREE.Group|null>>({}); const innerRefs = useRef<Record<string,THREE.Group|null>>({});
+  const {camera,size} = useThree(); const vec=useMemo(()=>new THREE.Vector3(),[]); const pos=useMemo(()=>new THREE.Vector3(),[]);
 
   useFrame(()=>{
-    if(!mapReady||size.width===0)return;
-    const map=mapRef.current;if(!map)return;
+    if(!mapReady||size.width===0)return; const map=mapRef.current;if(!map)return;
     const zs=Math.pow(2,map.getZoom()-BASE_ZOOM);
     for(const p of places){
-      const out=outerRefs.current[p.placeId],inn=innerRefs.current[p.placeId];
-      if(!out||!inn)continue;
-      const pt=map.project([p.lng,p.lat]);
-      vec.set((pt.x/size.width)*2-1,-(pt.y/size.height)*2+1,0.5);
-      vec.unproject(camera);vec.sub(camera.position).normalize();
-      const d=-camera.position.y/vec.y;
-      pos.copy(camera.position).add(vec.multiplyScalar(d));
-      if(!Number.isNaN(pos.x)){out.position.copy(pos);inn.scale.setScalar(zs);}
+      const out=outerRefs.current[p.placeId],inn=innerRefs.current[p.placeId]; if(!out||!inn)continue;
+      const pt=map.project([p.lng,p.lat]); vec.set((pt.x/size.width)*2-1,-(pt.y/size.height)*2+1,0.5);
+      vec.unproject(camera);vec.sub(camera.position).normalize(); const d=-camera.position.y/vec.y;
+      pos.copy(camera.position).add(vec.multiplyScalar(d)); if(!Number.isNaN(pos.x)){out.position.copy(pos);inn.scale.setScalar(zs);}
     }
   });
 
@@ -1035,47 +892,42 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
         });
         if(visibleBlocks.length===0)return null;
 
-        const isSel=selectedPlaceId===p.placeId;
-        const isOther=selectedPlaceId!==null&&!isSel;
-        const baseState:('active'|'muted')=isOther?'muted':'active';
-        const isHover=hoverPlaceId===p.placeId;
-        const scH=baseState==='active'&&isHover?1.15:1.0;
-        const yOff=(baseState==='muted'?-0.03:0)+(baseState==='active'&&isHover?0.035:0);
-
-        const stackTopY = computeStackVisualTopY(visibleBlocks, isSel);
-        const anchorY = Math.max(0.9, stackTopY * 0.55);
-
-        const summary=isSel?getPlaceSummary({...p,blocks:visibleBlocks}):null;
-        const selBlock=isSel&&selectedSessionId?visibleBlocks.find(b=>b.sessionId===selectedSessionId)??null:null;
+        const isSel=selectedPlaceId===p.placeId; const isOther=selectedPlaceId!==null&&!isSel;
+        const baseState:('active'|'muted')=isOther?'muted':'active'; const isHover=hoverPlaceId===p.placeId;
+        const scH=baseState==='active'&&isHover?1.15:1.0; const yOff=(baseState==='muted'?-0.03:0)+(baseState==='active'&&isHover?0.035:0);
+        const stackTopY = computeStackVisualTopY(visibleBlocks, isSel); const anchorY = Math.max(0.9, stackTopY * 0.55);
+        const summary=isSel?getPlaceSummary({...p,blocks:visibleBlocks}):null; const selBlock=isSel&&selectedSessionId?visibleBlocks.find(b=>b.sessionId===selectedSessionId)??null:null;
 
         return (
           <group key={p.placeId} ref={r=>{outerRefs.current[p.placeId]=r;}} position={[0,yOff,0]} scale={[scH,scH,scH]}
             onPointerOver={e=>{e.stopPropagation();setHoverPlaceId(p.placeId);document.body.style.cursor='pointer';setMapInteractivity(false);}}
             onPointerOut={e=>{e.stopPropagation();setHoverPlaceId(c=>c===p.placeId?null:c);document.body.style.cursor='';setMapInteractivity(true);}}
-            onPointerDown={e=>{e.stopPropagation();if(!isSel){setSelectedPlaceId(p.placeId);setSelectedSessionId(null);onFocusPlace(p,true);}}}
+            onPointerDown={e=>{e.stopPropagation();if(!isSel){setSelectedPlaceId(p.placeId);setSelectedSessionId(null);setActivePhotoId(null);onFocusPlace(p,true);}}}
           >
             <group ref={r=>{innerRefs.current[p.placeId]=r;}}>
-              <PulseRing isActive={isSel} isHover={isHover} muted={baseState==='muted'} onPick={()=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(null);onFocusPlace(p,true);}}/>
+              <PulseRing isActive={isSel} isHover={isHover} muted={baseState==='muted'} onPick={()=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(null);setActivePhotoId(null);onFocusPlace(p,true);}}/>
 
               <BuildingStack blocks={visibleBlocks} buildingBaseState={baseState} selectedSessionId={selectedSessionId} isSelectedBuilding={isSel}
-                onPickBuilding={()=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(null);onFocusPlace(p,true);}}
-                onPickFloor={sid=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(sid);onFocusPlace(p,true);}}
+                onPickBuilding={()=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(null);setActivePhotoId(null);onFocusPlace(p,true);}}
+                onPickFloor={sid=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(sid);setActivePhotoId(null);onFocusPlace(p,true);}}
               />
 
               {isSel&&(
                 <MemoriesAboveBuilding
-                  blocks={p.blocks}
-                  placeId={p.placeId}
-                  stackTopY={stackTopY}
-                  selectedSessionId={selectedSessionId}
-                  onSelectSession={sid=>{setSelectedPlaceId(p.placeId);setSelectedSessionId(sid);onFocusPlace(p,true);}}
-                  isMobile={isMobile}
-                  mapRef={mapRef}
+                  blocks={p.blocks} placeId={p.placeId} stackTopY={stackTopY} selectedSessionId={selectedSessionId} isMobile={isMobile} mapRef={mapRef}
+                  activePhotoId={activePhotoId} setActivePhotoId={setActivePhotoId}
+                  onSelectSession={(sid, fromPhoto)=>{
+                    setSelectedPlaceId(p.placeId);
+                    setSelectedSessionId(sid);
+                    if(fromPhoto) onFocusPhoto(p);
+                    else onFocusPlace(p, true);
+                  }}
                 />
               )}
             </group>
 
-            {!isMobile&&isSel&&summary&&(
+            {/* 隱藏底部卡片如果照片正在展開 */}
+            {!isMobile&&isSel&&summary&&!activePhotoId&&(
               <group position={[0,anchorY,0]}>
                 <Html center transform={false} occlude={false} distanceFactor={14}
                   style={{pointerEvents:'auto',transform:'translate(180px,-40px) scale(0.78)',transformOrigin:'top left',maxWidth:'86vw',background:'rgba(32,38,48,0.92)',backdropFilter:'blur(12px)',borderRadius:16,border:'1px solid rgba(255,255,255,0.15)',boxShadow:'0 12px 32px rgba(0,0,0,0.5)'}}
@@ -1119,6 +971,7 @@ export default function ThreePage() {
   const [timeFilter,setTimeFilter]               = useState<TimeFilter>('month');
   const [friendFilter,setFriendFilter]           = useState<string|'all'>('all');
   const [isFilterOpen,setIsFilterOpen]           = useState(false);
+  const [activePhotoId, setActivePhotoId]        = useState<string|null>(null); // 全域追蹤展開的照片
 
   const mapContainerRef = useRef<HTMLDivElement|null>(null);
   const mapRef          = useRef<mapboxgl.Map|null>(null);
@@ -1155,6 +1008,21 @@ export default function ThreePage() {
     map.flyTo({center:[place.lng,place.lat],offset:(isExpand?(isMobile?[0,150]:[0,120]):(isMobile?[0,150]:[0,60])) as [number,number],zoom:isExpand?16.2:Math.max(curZ,15.5),pitch:isExpand?65:60,duration:1200,essential:true});
   },[isMobile]);
 
+  // 新增針對照片視角的鏡頭控制
+  const focusPhoto=useCallback((place:PlaceAggregate)=>{
+    const map=mapRef.current;if(!map)return;
+    const curZ=map.getZoom();
+    // 把鏡頭偏移向下(offset Y 增加)，這樣天空中的照片會位於畫面中央
+    map.flyTo({
+      center:[place.lng,place.lat],
+      offset:[0, isMobile ? 240 : 160] as [number,number],
+      zoom: Math.max(curZ, 15.8),
+      pitch: 55, // 角度稍微低一點看上面
+      duration: 1000,
+      essential: true
+    });
+  },[isMobile]);
+
   /* Mobile sheet */
   const [sheetH,setSheetH]   = useState(0);
   const snap   = useRef({min:0,mid:0,max:0});
@@ -1180,7 +1048,9 @@ export default function ThreePage() {
   const dispPlace   = sheet.placeId?places.find(p=>p.placeId===sheet.placeId)??null:null;
   const dispBlock   = dispPlace&&sheet.sessionId?dispPlace.blocks.find(b=>b.sessionId===sheet.sessionId)??null:null;
   const dispSummary = dispPlace?getPlaceSummary(dispPlace):null;
-  const sheetOpen   = sheet.isOpen;
+  
+  // 當照片在放大觀看時，把 bottom sheet 收起來
+  const sheetOpen   = sheet.isOpen && !activePhotoId;
 
   useEffect(()=>{
     if(!isMobile)return;
@@ -1246,6 +1116,7 @@ export default function ThreePage() {
           onPointerMissed={()=>{
             if(selectedPlaceId){const pl=places.find(p=>p.placeId===selectedPlaceId);if(pl)focusPlace(pl,false);}
             setSelectedPlaceId(null);setSelectedSessionId(null);setHoverPlaceId(null);
+            setActivePhotoId(null); // 取消選擇照片
             document.body.style.cursor='';setMapInteractivity(true);
           }}
         >
@@ -1257,11 +1128,17 @@ export default function ThreePage() {
 
           <TrajectoryManager places={places} sessions={ALL_SESSIONS} timeFilter={timeFilter} friendFilter={friendFilter} selectedPlaceId={selectedPlaceId} mapRef={mapRef} mapReady={mapReady}/>
 
+          {/* 全息環境與動態生命力系統 */}
+          <HolographicEnvironment />
+          <CyberTrafficSystem places={places} mapRef={mapRef} mapReady={mapReady} />
+          <PopulationSystem places={places} mapRef={mapRef} mapReady={mapReady} />
+
           <MapSyncedPlaces places={places} mapRef={mapRef} mapReady={mapReady}
             selectedPlaceId={selectedPlaceId} selectedSessionId={selectedSessionId} hoverPlaceId={hoverPlaceId}
             timeFilter={timeFilter} friendFilter={friendFilter}
             setSelectedPlaceId={setSelectedPlaceId} setSelectedSessionId={setSelectedSessionId} setHoverPlaceId={setHoverPlaceId}
-            router={router} isMobile={isMobile} onFocusPlace={focusPlace} setMapInteractivity={setMapInteractivity}
+            router={router} isMobile={isMobile} onFocusPlace={focusPlace} onFocusPhoto={focusPhoto} setMapInteractivity={setMapInteractivity}
+            activePhotoId={activePhotoId} setActivePhotoId={setActivePhotoId}
           />
 
           <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.01,0]}>
