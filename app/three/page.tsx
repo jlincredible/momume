@@ -267,17 +267,17 @@ function CyberFunnel({ color, totalMinutes, blockCount }: { color:string; totalM
       {funnelData.map((fd,i)=>(
         <mesh key={i} ref={r=>{if(r)ringRefs.current[i]=r;}} position={[0,fd.y,0]} rotation={[-Math.PI/2,0,0]}>
           <torusGeometry args={[fd.radius,0.018,12,80]}/>
-          <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} depthWrite={false}/>
+          <meshBasicMaterial color={color} transparent opacity={fd.opacity} blending={THREE.AdditiveBlending} />
         </mesh>
       ))}
-      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.28,48]}/><meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh position={[0,1.9,0]}><sphereGeometry args={[0.07,14,14]}/><meshBasicMaterial color="#ffffff" transparent opacity={0.65} blending={THREE.AdditiveBlending} /></mesh>
       {beamAngles.map((ang,i)=>{
         const br=0.5+((i%3)*0.12);
-        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>);
+        return (<mesh key={i} ref={r=>{if(r)beamRefs.current[i]=r;}} position={[Math.cos(ang)*br,0.9,Math.sin(ang)*br]}><cylinderGeometry args={[0.01,0.025,1.8,6,1,true]}/><meshBasicMaterial color={color} transparent opacity={0.15} blending={THREE.AdditiveBlending} /></mesh>);
       })}
-      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>))}
-      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      {particles.map((pd,i)=>(<mesh key={i} ref={r=>{if(r)partRefs.current[i]=r;}}><sphereGeometry args={[pd.size,5,5]}/><meshBasicMaterial color={color} transparent opacity={0.5} blending={THREE.AdditiveBlending} /></mesh>))}
+      <mesh ref={coreRef}><sphereGeometry args={[0.13,20,20]}/><meshBasicMaterial color={color} transparent opacity={0.9} blending={THREE.AdditiveBlending} /></mesh>
       <Html center transform={false} occlude={false} distanceFactor={10} position={[1.2,0.9,0]}>
         <div style={{ pointerEvents:'none', color:'white', fontFamily:'Inter,system-ui,sans-serif', width:128, padding:'10px 13px', borderRadius:12, background:'rgba(8,14,24,0.75)', border:`1px solid ${color}44`, backdropFilter:'blur(8px)', boxShadow:`0 0 20px ${color}22` }}>
           <div style={{fontSize:9,letterSpacing:'0.15em',opacity:0.55,marginBottom:3}}>PLACE ENERGY</div>
@@ -299,8 +299,8 @@ function MemoryMetaChip({color,title,subtitle,active}:{color:string;title:string
   useFrame(({clock})=>{ if(!ref.current)return; ref.current.position.y=THREE.MathUtils.lerp(ref.current.position.y,active?0.38+Math.sin(clock.elapsedTime*1.5)*0.01:0.22,0.12); });
   return (
     <group ref={ref} position={[1.45,0.22,0.08]}>
-      <mesh><planeGeometry args={[1.0,0.45]}/><meshBasicMaterial color="#0d1626" transparent opacity={active?0.85:0} depthWrite={false}/></mesh>
-      <mesh position={[0,0,0.002]}><planeGeometry args={[1.04,0.49]}/><meshBasicMaterial color={color} transparent opacity={active?0.3:0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh><planeGeometry args={[1.0,0.45]}/><meshBasicMaterial color="#0d1626" transparent opacity={active?0.85:0} /></mesh>
+      <mesh position={[0,0,0.002]}><planeGeometry args={[1.04,0.49]}/><meshBasicMaterial color={color} transparent opacity={active?0.3:0} blending={THREE.AdditiveBlending} /></mesh>
       {active&&<Html center transform={false} occlude={false} style={{pointerEvents:'none',width:'140px',transform:'translate(-50%,-50%)',color:'white',fontFamily:'system-ui,sans-serif',textShadow:'0 0 10px rgba(0,0,0,0.8)'}}>
         <div style={{fontSize:13,fontWeight:700,lineHeight:1.15}}>{title}</div>
         <div style={{fontSize:11,opacity:0.72,marginTop:4}}>{subtitle}</div>
@@ -320,6 +320,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
   onSelectSession:(id:string, fromPhoto?:boolean)=>void;dragRef:React.MutableRefObject<{dragged:boolean}>;
   ringRadius:number;isMobile:boolean;
 }) {
+  const router = useRouter(); // 讓 MemoryCard 內的 SessionCard 也可以使用
   const groupRef = useRef<THREE.Group>(null);
   const matRef   = useRef<any>(null);
   const bgRef    = useRef<THREE.MeshBasicMaterial>(null);
@@ -441,7 +442,8 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
     }
   });
 
-  const htmlPos = isMobile ? [0, -1.5, 0] : [-1.6, 0.2, 0];
+  // 修改：手機版顯示在正下方，電腦版顯示在左側
+  const htmlPos = isMobile ? [0, -1.4, 0] : [-1.5, 0, 0];
 
   return (
     <group ref={groupRef}
@@ -453,7 +455,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
           longPressTriggeredRef.current=true;
           onSnapToCenter(index);
           onMakeActive();
-          onSelectSession(m.sessionId, true); 
+          onSelectSession(m.sessionId, true); // True 代表來自照片的點擊
         },320);
       }}
       onPointerUp={e=>{
@@ -471,9 +473,9 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
       onPointerOut={()=>{if(pressTimer.current)clearTimeout(pressTimer.current);longPressTriggeredRef.current=false;setHovered(false);document.body.style.cursor='';}}
       onPointerOver={()=>{setHovered(true);document.body.style.cursor='pointer';}}
     >
-      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} wireframe/></mesh>
+      <mesh position={[0,0,-0.02]}><planeGeometry args={[1.5,1.5]}/><meshBasicMaterial ref={bgRef} color={m.color} transparent opacity={0.05} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh ref={frameMeshRef} position={[0,0,-0.045]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameGlowMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh position={[0,0,-0.04]}><planeGeometry args={[1.55,1.55]}/><meshBasicMaterial ref={frameWireMatRef} color={m.color} transparent opacity={0} blending={THREE.AdditiveBlending} wireframe/></mesh>
       {tex?(
         <mesh><planeGeometry args={[1.35,1.35]}/>
           {/* @ts-ignore */}
@@ -486,36 +488,30 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
         <MemoryMetaChip color={m.color} title={m.hangoutType??'Memory'} subtitle={m.startedAt?fmtTime(m.startedAt):`Session ${m.sessionId}`} active={isActive} />
       )}
 
+      {/* ⚠️ 修改：將原本獨立設計的簡陋 HTML，替換為完整的 SessionCard 以符合設計圖 */}
       {isActive && (
         <Html center transform={false} occlude={false} distanceFactor={10} position={htmlPos as [number,number,number]}>
           <div
             style={{
               pointerEvents: 'auto', 
-              width: 260,
-              padding: '16px 20px',
-              borderRadius: 20,
-              color: 'white',
-              fontFamily: 'system-ui, sans-serif',
+              width: 320, // 配合 SessionCard 的寬度
               background: 'rgba(22, 28, 40, 0.85)',
+              borderRadius: 16,
               border: `1px solid ${m.color}66`,
               backdropFilter: 'blur(20px)',
-              boxShadow: `0 18px 50px ${m.color}22, 0 12px 32px rgba(0,0,0,0.6)`,
+              boxShadow: `0 18px 50px ${m.color}33, 0 12px 32px rgba(0,0,0,0.6)`,
               opacity: panelOpen ? 1 : 0,
-              transform: panelOpen ? 'translateY(0px) scale(1)' : 'translateY(10px) scale(0.95)',
+              transform: panelOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -40%) scale(0.95)',
               transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease',
             }}
           >
-            <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>{m.hangoutType ?? 'Memory'}</span>
-              <div style={{width: 12, height: 12, borderRadius: '50%', background: m.color, boxShadow: `0 0 10px ${m.color}`}} />
-            </div>
-            <div style={{ fontSize: 13, opacity: 0.75, marginTop: 8 }}>{m.startedAt ? fmtTime(m.startedAt) : ''}</div>
-            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              {m.placeId} / <span style={{fontWeight: 'bold'}}>{Math.round(m.minutes ?? 0)}m</span> / {FRIEND_NAMES[m.friendId] ?? m.friendId}
-            </div>
-            <div style={{ marginTop: 14, fontSize: 15, lineHeight: 1.4, opacity: 0.95 }}>
-              {m.notes || (Array.isArray(m.tags) ? m.tags[0] : null) || moodLabel(m.moodScore ?? 3)}
-            </div>
+            <SessionCard 
+              placeId={m.placeId} 
+              session={m} 
+              onBack={onCancelActive} 
+              onOpenFull={() => router.push(`/session/${m.sessionId}`)} 
+              onClose={onCancelActive} 
+            />
           </div>
         </Html>
       )}
@@ -527,7 +523,7 @@ function MemoryCard({m,index,total,scrollRef,isActive,expandedMode,onMakeActive,
    MemoriesAboveBuilding
 ========================= */
 
-function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSelectSession,isMobile,mapRef,activePhotoId,setActivePhotoId}:{
+function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSelectSession,isMobile,mapRef,activePhotoId,setActivePhotoId,onDeselectPhoto}:{
   blocks: PlaceAggregate['blocks'];
   placeId: string;
   stackTopY: number; 
@@ -537,10 +533,11 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
   mapRef:React.MutableRefObject<mapboxgl.Map|null>;
   activePhotoId: string | null;
   setActivePhotoId: React.Dispatch<React.SetStateAction<string|null>>;
+  onDeselectPhoto: () => void; // 新增：用於恢復攝影機視角
 }) {
   const moments = useMemo(()=>
     blocks.flatMap((b)=>b.moments.map((m)=>({
-      ...m, sessionId: b.sessionId, placeId, friendId: b.friendId, minutes: b.minutes,
+      ...m, sessionId: b.sessionId, placeId, friendId: b.friendId, minutes: b.minutes, oops: b.oops, // 補上 oops
       color: b.color, startedAt: b.startedAt, hangoutType: b.hangoutType, tags: b.tags, moodScore: b.moodScore, notes: b.notes,
     }))),
   [blocks, placeId]);
@@ -587,6 +584,7 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
     if(mapRef.current){mapRef.current.dragPan.disable();mapRef.current.scrollZoom.disable();}
     dragRef.current={isDragging:true,startX:e.clientX,startScroll:targetRef.current,dragged:false};
     setActivePhotoId(null);
+    onDeselectPhoto();
   };
   const onWallMove=(e:any)=>{
     if(!dragRef.current.isDragging)return;e.stopPropagation();
@@ -617,15 +615,18 @@ function MemoriesAboveBuilding({blocks,placeId,stackTopY,selectedSessionId,onSel
 
   return (
     <group ref={groupRef} position={[0, galleryY, 0]}>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} depthWrite={false}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.42,0]}><ringGeometry args={[ringRadius*0.82,ringRadius*1.08,48]}/><meshBasicMaterial color="#2DD4BF" transparent opacity={0.045} blending={THREE.AdditiveBlending} /></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.41,0]}><ringGeometry args={[ringRadius*1.02,ringRadius*1.14,64]}/><meshBasicMaterial color="#7ef9ff" transparent opacity={0.028} blending={THREE.AdditiveBlending} /></mesh>
       {moments.map((m,i)=>(
         <MemoryCard key={m.id} m={m} index={i} total={moments.length} ringRadius={ringRadius}
           scrollRef={scrollRef} dragRef={dragRef} isMobile={isMobile}
           isActive={activePhotoId===m.id}
           expandedMode={activePhotoId!==null}
           onMakeActive={()=>setActivePhotoId(m.id)}
-          onCancelActive={()=>setActivePhotoId(null)}
+          onCancelActive={()=>{
+            setActivePhotoId(null);
+            onDeselectPhoto(); // 點擊關閉照片時，恢復攝影機視角
+          }}
           onSnapToCenter={snapToCenter}
           onSelectSession={onSelectSession}
         />
@@ -833,7 +834,6 @@ function CyberTrafficSystem({ places, mapRef, mapReady }: { places: PlaceAggrega
     g.translate(0, 0.3, 0); 
     return g;
   }, []);
-  // Removed depthWrite=false here as requested
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#2DD4BF', transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }), []);
 
   useFrame((state) => {
@@ -940,7 +940,6 @@ function PopulationSystem({ places, mapRef, mapReady }: { places: PlaceAggregate
     g.translate(0, 0.3, 0); 
     return g;
   }, []);
-  // Removed depthWrite=false here as requested
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#7ef9ff', transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending }), []);
 
   useFrame((state) => {
@@ -1084,6 +1083,7 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
                 <MemoriesAboveBuilding
                   blocks={p.blocks} placeId={p.placeId} stackTopY={stackTopY} selectedSessionId={selectedSessionId} isMobile={isMobile} mapRef={mapRef}
                   activePhotoId={activePhotoId} setActivePhotoId={setActivePhotoId}
+                  onDeselectPhoto={() => onFocusPlace(p, true)} // 恢復視角
                   onSelectSession={(sid, fromPhoto)=>{
                     setSelectedPlaceId(p.placeId);
                     setSelectedSessionId(sid);
@@ -1094,6 +1094,7 @@ function MapSyncedPlaces({places,mapRef,mapReady,selectedPlaceId,selectedSession
               )}
             </group>
 
+            {/* 電腦版時的浮動卡片 (若進入照片模式則隱藏) */}
             {!isMobile&&isSel&&summary&&!activePhotoId&&(
               <group position={[0,anchorY,0]}>
                 <Html center transform={false} occlude={false} distanceFactor={14}
@@ -1172,17 +1173,18 @@ export default function ThreePage() {
   const focusPlace=useCallback((place:PlaceAggregate,isExpand=false)=>{
     const map=mapRef.current;if(!map)return;
     const curZ=map.getZoom();
-    map.flyTo({center:[place.lng,place.lat],offset:(isExpand?(isMobile?[0,150]:[0,120]):(isMobile?[0,150]:[0,60])) as [number,number],zoom:isExpand?16.2:Math.max(curZ,15.5),pitch:isExpand?65:60,duration:1200,essential:true});
+    map.flyTo({center:[place.lng,place.lat],offset:(isExpand?(isMobile?[0,150]:[0,120]):(isMobile?[0,150]:[0,60])) as [number,number],zoom:isExpand?16.2:Math.max(curZ,15.5),pitch:isExpand?60:50,duration:1200,essential:true});
   },[isMobile]);
 
+  // ⚠️ 修正：全新的照片運鏡視角
   const focusPhoto=useCallback((place:PlaceAggregate)=>{
     const map=mapRef.current;if(!map)return;
-    const curZ=map.getZoom();
+    // 透過極大的正向 offset 與高 pitch 讓地圖向下推，仰望天空的照片
     map.flyTo({
       center:[place.lng,place.lat],
-      offset:[0, isMobile ? 240 : 160] as [number,number],
-      zoom: Math.max(curZ, 15.8),
-      pitch: 55, 
+      offset:[0, isMobile ? 320 : 200] as [number,number],
+      zoom: 16.5, 
+      pitch: 72, 
       duration: 1000,
       essential: true
     });
@@ -1214,6 +1216,7 @@ export default function ThreePage() {
   const dispBlock   = dispPlace&&sheet.sessionId?dispPlace.blocks.find(b=>b.sessionId===sheet.sessionId)??null:null;
   const dispSummary = dispPlace?getPlaceSummary(dispPlace):null;
   
+  // ⚠️ 當照片為放大狀態時，收起底部的 Bottom Sheet
   const sheetOpen   = sheet.isOpen && !activePhotoId;
 
   useEffect(()=>{
